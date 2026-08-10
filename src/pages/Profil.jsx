@@ -369,45 +369,9 @@ export default function Profil() {
           <LoggedInView user={user} profile={profile} signOut={signOut} />
         ) : (
           <>
-            {/* ── Auth + value props ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-10 mb-16">
+            {/* ── Auth ── */}
+            <div className="max-w-[420px] mx-auto mb-16">
               <AuthForm />
-
-              {/* Value props — premium layout */}
-              <div>
-                <span className="eyebrow">Pourquoi rejoindre SportFin ?</span>
-                <h2 className="section-title mb-2">La référence du sport business</h2>
-                <p className="text-[13.5px] mb-8 max-w-md" style={{ color: 'var(--sf-muted)' }}>
-                  La plateforme complète pour comprendre, apprendre et accélérer votre carrière dans le sport professionnel.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {VALUE_PROPS.map((vp, i) => (
-                    <div key={vp.title}
-                      className="group relative p-5 rounded-2xl transition-all"
-                      style={{
-                        background: vp.accent ? 'var(--sf-primary)' : 'var(--sf-surface)',
-                        border: vp.accent ? 'none' : '1px solid var(--sf-border)',
-                        boxShadow: vp.accent ? '0 8px 32px rgba(11,37,69,.18)' : 'var(--sf-shadow-xs)',
-                      }}>
-                      {/* Icon */}
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center text-[21px] mb-4"
-                        style={{
-                          background: vp.accent ? 'rgba(255,255,255,.12)' : i === 3 ? 'rgba(201,168,76,.1)' : 'rgba(11,37,69,.06)',
-                        }}>
-                        {vp.icon}
-                      </div>
-                      <h3 className="font-serif font-bold text-[15px] mb-2 leading-snug"
-                        style={{ color: vp.accent ? '#fff' : 'var(--sf-text)' }}>
-                        {vp.title}
-                      </h3>
-                      <p className="text-[12.5px] leading-relaxed"
-                        style={{ color: vp.accent ? 'rgba(255,255,255,.65)' : 'var(--sf-muted)' }}>
-                        {vp.desc}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
 
             {/* ── Pricing ── */}
