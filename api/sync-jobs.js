@@ -8,6 +8,27 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 const KEYWORDS = ['sport', 'football', 'rugby', 'basketball', 'tennis', 'handball', 'natation', 'athlétisme', 'sport business', 'directeur sportif', 'manager sport']
 const ADZUNA_KEYWORDS = ['sport', 'football', 'rugby', 'basketball', 'sport business', 'manager sport']
 
+const CATEGORIES = [
+  { name: 'Finance & Comptabilité',    keywords: ['financ', 'comptab', 'trésor', 'budget', 'audit', 'fiscal', 'contrôle de gestion', 'daf', 'cfo', 'controller'] },
+  { name: 'Data & Analyse',            keywords: ['data', 'analyst', 'statistique', 'crm', 'bi ', 'business intelligence', 'reporting', 'kpi', 'dashboard'] },
+  { name: 'Marketing & Communication', keywords: ['marketing', 'communicat', 'brand', 'digital', 'réseaux sociaux', 'content', 'social media', 'community', 'rp ', 'relation presse', 'presse'] },
+  { name: 'Commercial & Partenariats', keywords: ['commercial', 'partenariat', 'sponsor', 'vente', 'business develop', 'account', 'client', 'b2b'] },
+  { name: 'Juridique',                 keywords: ['juridi', 'droit', 'contrat', 'avocat', 'legal', 'conformité', 'compliance'] },
+  { name: 'RH & Recrutement',          keywords: ['rh ', 'ressources humaines', 'recrutement', 'talent', 'formation', 'paie', 'drh', 'grh'] },
+  { name: 'Logistique & Opérations',   keywords: ['logistique', 'opérations', 'événement', 'évènement', 'organisation', 'billetterie', 'stade', 'infrastructure', 'facility'] },
+  { name: 'Enseignement & Formation',  keywords: ['enseign', 'formation', 'coach', 'entraîn', 'éducateur', 'moniteur', 'professeur', 'formateur'] },
+  { name: 'Direction & Management',    keywords: ['directeur', 'director', 'manager', 'responsable', 'chef de', 'head of', 'dg ', 'pdg', 'président'] },
+  { name: 'Staff & Terrain',           keywords: ['animat', 'accueil', 'stewarding', 'sécurité', 'médical', 'kiné', 'préparateur', 'agent'] },
+]
+
+function classifyJob(title, description) {
+  const text = `${title} ${description}`.toLowerCase()
+  for (const cat of CATEGORIES) {
+    if (cat.keywords.some(k => text.includes(k))) return cat.name
+  }
+  return 'Autre'
+}
+
 const CONTRACT_MAP = {
   CDI: 'CDI',
   CDD: 'CDD',
@@ -71,7 +92,7 @@ export default async function handler(req, res) {
           description: (j.description || '').slice(0, 600),
           contract: CONTRACT_MAP[j.typeContrat] || 'CDI',
           location: j.lieuTravail?.libelle || '',
-          domain: 'Sport',
+          domain: classifyJob(j.intitule || '', j.description || ''),
           apply_url: j.origineOffre?.urlOrigine || `https://candidat.francetravail.fr/offres/recherche/detail/${j.id}`,
           published: true,
           external_id: `ft_${j.id}`,
@@ -89,7 +110,7 @@ export default async function handler(req, res) {
         description: (j.description || '').slice(0, 600),
         contract: j.contract_time === 'full_time' ? 'CDI' : j.contract_time === 'part_time' ? 'CDD' : 'CDI',
         location: j.location?.display_name || '',
-        domain: 'Sport',
+        domain: classifyJob(j.title || '', j.description || ''),
         apply_url: j.redirect_url || '',
         published: true,
         external_id: `az_${j.id}`,
