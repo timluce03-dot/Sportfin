@@ -6,8 +6,13 @@ export default function CareerMetiersBanner() {
   const [selected, setSelected] = useState(null)
   const trackRef = useRef(null)
 
+  const [speed, setSpeed] = useState(() => localStorage.getItem('sf-metiers-speed') || '40s')
+
   useEffect(() => {
     getCareerMetiers().then(({ data }) => setMetiers(data))
+    const onSpeed = e => setSpeed(e.detail)
+    window.addEventListener('sf-metier-speed', onSpeed)
+    return () => window.removeEventListener('sf-metier-speed', onSpeed)
   }, [])
 
   if (metiers.length === 0) return null
@@ -38,7 +43,7 @@ export default function CareerMetiersBanner() {
             <div
               ref={trackRef}
               className="flex gap-4 px-4"
-              style={{ animation: 'sfScroll 40s linear infinite', width: 'max-content' }}
+              style={{ animation: `sfScroll ${speed} linear infinite`, width: 'max-content' }}
             >
               {items.map((m, i) => (
                 <MetierCard key={`${m.id}-${i}`} metier={m} onSelect={() => setSelected(m)} />
