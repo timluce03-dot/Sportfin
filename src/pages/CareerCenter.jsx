@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getJobs } from '../services/jobsService'
+import CareerMetiersBanner from '../components/CareerMetiersBanner'
 
 const CONTRACT_STYLE = {
   CDI:    { bg: 'rgba(16,185,129,.1)', color: '#065f46' },
@@ -128,6 +129,9 @@ export default function CareerCenter() {
           </div>
         </div>
       </section>
+
+      {/* ── Métiers banner ── */}
+      <CareerMetiersBanner />
 
       {/* ── Results ── */}
       <div className="max-w-[1360px] mx-auto px-6 lg:px-10 py-10">

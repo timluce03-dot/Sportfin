@@ -24,9 +24,10 @@ const NAV_SECTIONS = [
   {
     label: 'Communauté',
     links: [
-      { to: '/admin/jobs',      label: 'Career Center', icon: '💼' },
-      { to: '/admin/reviews',   label: 'Avis',          icon: '⭐' },
-      { to: '/admin/partners',  label: 'Partenaires',   icon: '🤝' },
+      { to: '/admin/jobs',           label: 'Career Center', icon: '💼' },
+      { to: '/admin/career-metiers', label: 'Métiers',       icon: '🧭' },
+      { to: '/admin/reviews',        label: 'Avis',          icon: '⭐' },
+      { to: '/admin/partners',       label: 'Partenaires',   icon: '🤝' },
     ],
   },
   {

@@ -34,6 +34,7 @@ import AdminCertification from './pages/admin/AdminCertification'
 import AdminSettings from './pages/admin/AdminSettings'
 import AdminDesign from './pages/admin/AdminDesign'
 import AdminPartners from './pages/admin/AdminPartners'
+import AdminCareerMetiers from './pages/admin/AdminCareerMetiers'
 
 function PublicLayout() {
   return (
@@ -82,6 +83,7 @@ export default function App() {
               <Route path="settings"      element={<AdminSettings />} />
               <Route path="design"        element={<AdminDesign />} />
               <Route path="partners"      element={<AdminPartners />} />
+              <Route path="career-metiers" element={<AdminCareerMetiers />} />
             </Route>
           </Routes>
         </BrowserRouter>
