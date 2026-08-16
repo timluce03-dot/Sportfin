@@ -112,7 +112,10 @@ export default async function handler(req, res) {
 
     if (error) return res.status(500).json({ error: error.message })
 
-    return res.status(200).json({ success: true, synced: unique.length })
+    const ftCount = unique.filter(j => j.source === 'france_travail').length
+    const azCount = unique.filter(j => j.source === 'adzuna').length
+
+    return res.status(200).json({ success: true, synced: unique.length, france_travail: ftCount, adzuna: azCount })
   } catch (e) {
     return res.status(500).json({ error: e.message })
   }
