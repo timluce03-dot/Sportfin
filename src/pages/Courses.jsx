@@ -308,11 +308,15 @@ function CourseItem({ course, idx, exercises }) {
       {open && (
         <div className="border-t" style={{ borderColor: 'var(--sf-border)' }}>
           {course.pdf_url ? (
-            <iframe src={course.pdf_url} title={course.title}
+            <iframe
+              src={/\.(pptx?|ppt)$/i.test(course.pdf_url)
+                ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(course.pdf_url)}`
+                : course.pdf_url}
+              title={course.title}
               className="w-full block" style={{ height: 620, border: 'none' }} />
           ) : (
             <div className="px-4 py-6 text-center text-[13px]" style={{ color: 'var(--sf-muted)' }}>
-              Aucun PDF disponible pour ce cours.
+              Aucun contenu disponible pour ce cours.
             </div>
           )}
           {linked.length > 0 && (
