@@ -26,6 +26,7 @@ const NAV_SECTIONS = [
     links: [
       { to: '/admin/jobs',           label: 'Career Center', icon: '💼' },
       { to: '/admin/career-metiers', label: 'Métiers',       icon: '🧭' },
+      { to: '/admin/team',           label: 'Équipe',        icon: '👥' },
       { to: '/admin/reviews',        label: 'Avis',          icon: '⭐' },
       { to: '/admin/partners',       label: 'Partenaires',   icon: '🤝' },
     ],
