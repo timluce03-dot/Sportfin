@@ -309,7 +309,7 @@ function CourseItem({ course, idx, exercises }) {
         <div className="border-t" style={{ borderColor: 'var(--sf-border)' }}>
           {course.pdf_url ? (
             <iframe
-              src={/\.(pptx?|ppt)$/i.test(course.pdf_url)
+              src={/\.pptx?/i.test(course.pdf_url)
                 ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(course.pdf_url)}`
                 : course.pdf_url}
               title={course.title}
