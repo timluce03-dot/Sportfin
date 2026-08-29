@@ -8,23 +8,41 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 const KEYWORDS = ['sport', 'football', 'rugby', 'basketball', 'tennis', 'handball', 'natation', 'athlétisme', 'sport business', 'directeur sportif', 'manager sport']
 const ADZUNA_KEYWORDS = ['sport', 'football', 'rugby', 'basketball', 'sport business', 'manager sport']
 
+// title keywords (applied first, strict match on job title only)
 const CATEGORIES = [
-  { name: 'Finance & Comptabilité',    keywords: ['financ', 'comptab', 'trésor', 'budget', 'audit', 'fiscal', 'contrôle de gestion', 'daf', 'cfo', 'controller'] },
-  { name: 'Data & Analyse',            keywords: ['data', 'analyst', 'statistique', 'crm', 'bi ', 'business intelligence', 'reporting', 'kpi', 'dashboard'] },
-  { name: 'Marketing & Communication', keywords: ['marketing', 'communicat', 'brand', 'digital', 'réseaux sociaux', 'content', 'social media', 'community', 'rp ', 'relation presse', 'presse'] },
-  { name: 'Commercial & Partenariats', keywords: ['commercial', 'partenariat', 'sponsor', 'vente', 'business develop', 'account', 'client', 'b2b'] },
-  { name: 'Juridique',                 keywords: ['juridi', 'droit', 'contrat', 'avocat', 'legal', 'conformité', 'compliance'] },
-  { name: 'RH & Recrutement',          keywords: ['rh ', 'ressources humaines', 'recrutement', 'talent', 'formation', 'paie', 'drh', 'grh'] },
-  { name: 'Logistique & Opérations',   keywords: ['logistique', 'opérations', 'événement', 'évènement', 'organisation', 'billetterie', 'stade', 'infrastructure', 'facility'] },
-  { name: 'Enseignement & Formation',  keywords: ['enseign', 'formation', 'coach', 'entraîn', 'éducateur', 'moniteur', 'professeur', 'formateur'] },
-  { name: 'Direction & Management',    keywords: ['directeur', 'director', 'manager', 'responsable', 'chef de', 'head of', 'dg ', 'pdg', 'président'] },
-  { name: 'Staff & Terrain',           keywords: ['animat', 'accueil', 'stewarding', 'sécurité', 'médical', 'kiné', 'préparateur', 'agent'] },
+  { name: 'Enseignement & Formation',  title: ['éducateur', 'enseignant', 'formateur', 'moniteur', 'professeur', 'entraîneur', 'coach sportif', 'préparateur physique', 'bpjeps', 'desjeps'] },
+  { name: 'Direction & Management',    title: ['directeur', 'director', 'head of', 'dg ', 'pdg', 'président', 'vice-président', 'secrétaire général'] },
+  { name: 'Finance & Comptabilité',    title: ['financ', 'comptab', 'trésor', 'audit', 'daf', 'cfo', 'controller', 'contrôleur de gestion'] },
+  { name: 'Data & Analyse',            title: ['data ', 'analyst', 'analyste', 'statisticien', 'business intelligence', 'crm', 'reporting'] },
+  { name: 'Marketing & Communication', title: ['marketing', 'communicat', 'brand', 'community', 'social media', 'relation presse', 'rp ', 'content'] },
+  { name: 'Commercial & Partenariats', title: ['commercial', 'chargé de partenariat', 'responsable partenariat', 'account manager', 'business developer', 'développeur commercial', 'sponsor'] },
+  { name: 'Juridique',                 title: ['juriste', 'avocat', 'juridique', 'legal', 'conformité', 'compliance'] },
+  { name: 'RH & Recrutement',          title: ['drh', 'rh ', 'ressources humaines', 'recruteur', 'chargé rh', 'responsable rh', 'talent'] },
+  { name: 'Logistique & Opérations',   title: ['logistique', 'opérations', 'chargé d\'événement', 'billetterie', 'facility', 'organisation d\'événement'] },
+  { name: 'Staff & Terrain',           title: ['animateur', 'steward', 'agent d\'accueil', 'kiné', 'médecin', 'soigneur', 'agent de sécurité'] },
+  { name: 'Direction & Management',    title: ['manager', 'responsable', 'chef de'] },
 ]
 
 function classifyJob(title, description) {
-  const text = `${title} ${description}`.toLowerCase()
+  const t = title.toLowerCase()
+  // 1. Match on title only — most reliable
   for (const cat of CATEGORIES) {
-    if (cat.keywords.some(k => text.includes(k))) return cat.name
+    if (cat.title.some(k => t.includes(k))) return cat.name
+  }
+  // 2. Fallback: description with strict multi-word phrases only
+  const desc = description.toLowerCase()
+  const descCats = [
+    { name: 'Finance & Comptabilité',    kw: ['contrôle de gestion', 'comptabilité', 'trésorerie', 'audit financier'] },
+    { name: 'Data & Analyse',            kw: ['analyse de données', 'data analyst', 'business intelligence'] },
+    { name: 'Marketing & Communication', kw: ['stratégie marketing', 'plan de communication', 'réseaux sociaux'] },
+    { name: 'Commercial & Partenariats', kw: ['développement commercial', 'chiffre d\'affaires', 'portefeuille client'] },
+    { name: 'Juridique',                 kw: ['droit du sport', 'contrat de travail', 'droit des contrats'] },
+    { name: 'RH & Recrutement',          kw: ['gestion des ressources humaines', 'processus de recrutement'] },
+    { name: 'Logistique & Opérations',   kw: ['organisation d\'événements sportifs', 'gestion de billetterie'] },
+    { name: 'Enseignement & Formation',  kw: ['formation sportive', 'éducation sportive', 'encadrement sportif'] },
+  ]
+  for (const cat of descCats) {
+    if (cat.kw.some(k => desc.includes(k))) return cat.name
   }
   return 'Autre'
 }
