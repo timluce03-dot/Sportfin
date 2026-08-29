@@ -5,6 +5,7 @@ import { getArticles } from '../services/articlesService'
 import { getReviews } from '../services/reviewsService'
 import CareerMetiersBanner from '../components/CareerMetiersBanner'
 import TeamSection from '../components/TeamSection'
+import PartnersScrollBanner from '../components/PartnersScrollBanner'
 
 const FEATURES = [
   { icon: '📚', label: 'Cours & Exercices',    desc: 'Finance, stratégie, droits TV' },
@@ -270,6 +271,9 @@ export default function Home() {
 
       {/* ── Équipe ── */}
       <TeamSection />
+
+      {/* ── Partenaires ── */}
+      <PartnersScrollBanner title="Ils reconnaissent la valeur de SportFin" />
     </div>
   )
 }
