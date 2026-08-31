@@ -1,71 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { getPlans } from '../services/plansService'
 
-const PLANS = [
-  {
-    id: 'free',
-    name: 'Gratuit',
-    price: '0€',
-    period: '',
-    desc: 'Pour découvrir la plateforme',
-    features: [
-      'Cours d\'introduction (3 chapitres)',
-      'Articles en accès libre',
-      'Quiz de base (3 thèmes)',
-      'Career Center limité',
-    ],
-    cta: 'Plan actuel',
-    disabled: true,
-  },
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: '24,99€',
-    period: '/mois',
-    desc: 'Pour commencer sérieusement',
-    features: [
-      'Accès à tous les cours (hors Module Gold)',
-      'Career Center complet',
-      'Tous les quiz + classements',
-      'Podcasts & interviews',
-    ],
-    cta: 'Choisir Starter',
-    featured: false,
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: '39,99€',
-    period: '/mois',
-    desc: 'Pour les candidats ambitieux',
-    features: [
-      'Tout Starter inclus',
-      'Module Gold (Private Equity, M&A)',
-      '15% de remise sur la certification',
-      'Exercices pratiques corrigés',
-      'Accès prioritaire aux nouveaux contenus',
-    ],
-    cta: 'Passer à Premium',
-    featured: true,
-  },
-  {
-    id: 'certification',
-    name: 'Certification',
-    price: '59,99€',
-    period: ' unique',
-    desc: 'Pour décrocher le badge SBM',
-    features: [
-      'Tout Premium inclus',
-      'Badge SBM+ / SBM++ / SBM+++',
-      'Certification LinkedIn officielle',
-      'Annales corrigées du test',
-      'Accès à vie au programme',
-    ],
-    cta: 'Obtenir la certification',
-    gold: true,
-  },
-]
+function usePlans() {
+  const [plans, setPlans] = useState([])
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    getPlans().then(({ data }) => { setPlans(data); setLoading(false) })
+  }, [])
+  return { plans, loading }
+}
 
 const VALUE_PROPS = [
   {
@@ -95,83 +40,68 @@ const VALUE_PROPS = [
 ]
 
 function PricingCard({ plan }) {
-  const isDark = plan.featured || plan.gold
+  const isFeatured = plan.highlighted
+  const features   = Array.isArray(plan.features) ? plan.features : []
 
   return (
-    <div
-      className="relative rounded-2xl flex flex-col p-6"
+    <div className="relative rounded-2xl flex flex-col p-6"
       style={{
-        background: plan.gold
-          ? 'linear-gradient(145deg, #6b4c0d, #b8892e)'
-          : plan.featured
-          ? 'var(--sf-primary)'
-          : 'var(--sf-surface)',
-        border: isDark ? 'none' : '1px solid var(--sf-border)',
-        boxShadow: plan.featured
-          ? '0 12px 40px rgba(11,37,69,.28)'
-          : plan.gold
-          ? '0 12px 40px rgba(184,137,46,.3)'
-          : 'var(--sf-shadow-sm)',
-        transform: plan.featured ? 'scale(1.03)' : undefined,
-      }}
-    >
-      {plan.featured && (
-        <div
-          className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[10px] font-bold text-white whitespace-nowrap"
-          style={{ background: 'var(--sf-accent)' }}
-        >
+        background: isFeatured ? 'var(--sf-primary)' : 'var(--sf-surface)',
+        border: isFeatured ? 'none' : '1px solid var(--sf-border)',
+        boxShadow: isFeatured ? '0 12px 40px rgba(11,37,69,.28)' : 'var(--sf-shadow-sm)',
+        transform: isFeatured ? 'scale(1.03)' : undefined,
+      }}>
+      {isFeatured && (
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[10px] font-bold text-white whitespace-nowrap"
+          style={{ background: 'var(--sf-accent)' }}>
           LE PLUS POPULAIRE
         </div>
       )}
-
       <div className="mb-4">
         <div className="font-serif font-extrabold text-[17px] mb-0.5"
-          style={{ color: isDark ? '#fff' : 'var(--sf-text)' }}>
-          {plan.name}
-        </div>
-        <div className="text-[11px] font-medium"
-          style={{ color: isDark ? 'rgba(255,255,255,.55)' : 'var(--sf-muted)' }}>
-          {plan.desc}
-        </div>
+          style={{ color: isFeatured ? '#fff' : 'var(--sf-text)' }}>{plan.name}</div>
+        {plan.subtitle && (
+          <div className="text-[11px] font-medium"
+            style={{ color: isFeatured ? 'rgba(255,255,255,.55)' : 'var(--sf-muted)' }}>{plan.subtitle}</div>
+        )}
       </div>
-
       <div className="mb-5 flex items-end gap-0.5">
         <span className="font-serif font-black leading-none"
-          style={{ fontSize: 34, color: isDark ? '#fff' : 'var(--sf-primary)' }}>
-          {plan.price}
+          style={{ fontSize: 34, color: isFeatured ? '#fff' : 'var(--sf-primary)' }}>
+          {plan.price === 0 || plan.price === '0' ? 'Gratuit' : `${plan.price}€`}
         </span>
-        <span className="text-[12px] pb-0.5"
-          style={{ color: isDark ? 'rgba(255,255,255,.5)' : 'var(--sf-muted)' }}>
-          {plan.period}
-        </span>
+        {plan.period && (
+          <span className="text-[12px] pb-0.5"
+            style={{ color: isFeatured ? 'rgba(255,255,255,.5)' : 'var(--sf-muted)' }}>{plan.period}</span>
+        )}
       </div>
-
-      <ul className="flex-1 space-y-2.5 mb-6">
-        {plan.features.map(f => (
-          <li key={f} className="flex items-start gap-2 text-[12.5px]"
-            style={{ color: isDark ? 'rgba(255,255,255,.78)' : 'var(--sf-text-2, #374151)' }}>
+      <ul className="flex-1 space-y-2.5 mb-4">
+        {features.map((f, i) => (
+          <li key={i} className="flex items-start gap-2 text-[12.5px]"
+            style={{ color: isFeatured ? 'rgba(255,255,255,.78)' : 'var(--sf-text-2, #374151)' }}>
             <span className="mt-[1px] flex-shrink-0 font-bold text-[13px]"
-              style={{ color: plan.gold ? 'rgba(255,220,100,.9)' : isDark ? 'rgba(201,168,76,.9)' : 'var(--sf-accent)' }}>✓</span>
+              style={{ color: isFeatured ? 'rgba(201,168,76,.9)' : 'var(--sf-accent)' }}>✓</span>
             {f}
           </li>
         ))}
       </ul>
-
-      <button
-        disabled={plan.disabled}
-        className={`btn w-full justify-center text-[13px] font-semibold ${plan.disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-        style={
-          plan.gold
-            ? { background: 'rgba(255,255,255,.18)', color: '#fff', border: '1px solid rgba(255,255,255,.3)' }
-            : plan.featured
-            ? { background: 'var(--sf-accent)', color: '#2a1a00' }
-            : isDark
-            ? { background: 'rgba(255,255,255,.13)', color: '#fff', border: '1px solid rgba(255,255,255,.2)' }
-            : { background: 'var(--sf-primary)', color: '#fff' }
-        }
-      >
-        {plan.cta}
-      </button>
+      {plan.engagement && (
+        <p className="text-center text-[11px] mb-3 px-2 py-1.5 rounded-lg"
+          style={{
+            color: isFeatured ? 'rgba(255,255,255,.5)' : 'var(--sf-muted)',
+            background: isFeatured ? 'rgba(255,255,255,.08)' : 'var(--sf-bg)',
+            border: `1px solid ${isFeatured ? 'rgba(255,255,255,.15)' : 'var(--sf-border)'}`,
+          }}>
+          🔒 {plan.engagement}
+        </p>
+      )}
+      <Link to="/tarifs"
+        className="btn w-full justify-center text-[13px] font-semibold"
+        style={isFeatured
+          ? { background: 'var(--sf-accent)', color: '#2a1a00' }
+          : { background: 'var(--sf-primary)', color: '#fff' }}>
+        {plan.cta_label || 'Commencer'}
+      </Link>
     </div>
   )
 }
@@ -279,7 +209,7 @@ function AuthForm() {
   )
 }
 
-function LoggedInView({ user, profile, signOut }) {
+function LoggedInView({ user, profile, signOut, plans, plansLoading }) {
   const name     = profile?.full_name || user.email?.split('@')[0] || 'Utilisateur'
   const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
@@ -351,7 +281,9 @@ function LoggedInView({ user, profile, signOut }) {
           <h2 className="section-title mb-0">Passez au niveau supérieur</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {PLANS.map(p => <PricingCard key={p.id} plan={p} />)}
+          {plansLoading
+            ? Array.from({length:3}).map((_,i) => <div key={i} className="h-72 skeleton rounded-2xl"/>)
+            : plans.map(p => <PricingCard key={p.id} plan={p} />)}
         </div>
       </div>
     </div>
@@ -360,13 +292,14 @@ function LoggedInView({ user, profile, signOut }) {
 
 export default function Profil() {
   const { user, profile, signOut } = useAuth()
+  const { plans, loading: plansLoading } = usePlans()
 
   return (
     <div className="pt-[64px]" style={{ background: 'var(--sf-bg)' }}>
 
       <div className="max-w-[1360px] mx-auto px-6 lg:px-10 py-10">
         {user ? (
-          <LoggedInView user={user} profile={profile} signOut={signOut} />
+          <LoggedInView user={user} profile={profile} signOut={signOut} plans={plans} plansLoading={plansLoading} />
         ) : (
           <>
             {/* ── Auth ── */}
@@ -380,11 +313,13 @@ export default function Profil() {
                 <span className="eyebrow">Tarifs</span>
                 <h2 className="section-title">Choisissez votre formule</h2>
                 <p className="text-[13.5px] max-w-[500px] mx-auto mt-2" style={{ color: 'var(--sf-muted)' }}>
-                  Commencez gratuitement, upgradez quand vous êtes prêt. Aucun engagement sur les plans mensuels.
+                  Commencez gratuitement, upgradez quand vous êtes prêt.
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 max-w-[1100px] mx-auto items-end">
-                {PLANS.map(p => <PricingCard key={p.id} plan={p} />)}
+                {plansLoading
+                  ? Array.from({length:3}).map((_,i) => <div key={i} className="h-72 skeleton rounded-2xl"/>)
+                  : plans.map(p => <PricingCard key={p.id} plan={p} />)}
               </div>
             </div>
           </>
