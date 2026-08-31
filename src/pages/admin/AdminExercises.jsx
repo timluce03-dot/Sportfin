@@ -4,8 +4,10 @@ import { supabase } from '../../lib/supabase'
 const DIFFICULTIES = ['Débutant', 'Intermédiaire', 'Avancé', 'Expert']
 const EX_EMPTY = { chapter_id: '', title: '', description: '', difficulty: 'Intermédiaire', published: true }
 const Q_EMPTY = {
-  question: '', opt_a: '', opt_b: '', opt_c: '', opt_d: '',
-  is_multi: false, correct_index: 0, correct_indexes: [], explanation: ''
+  question: '', question_type: 'qcm',
+  opt_a: '', opt_b: '', opt_c: '', opt_d: '',
+  is_multi: false, correct_index: 0, correct_indexes: [],
+  accepted_answers: [], explanation: ''
 }
 const LETTERS = ['A', 'B', 'C', 'D']
 
@@ -17,23 +19,40 @@ function parseCorrectIndexes(q) {
 
 function qToForm(q) {
   const opts = Array.isArray(q.options) ? q.options : JSON.parse(q.options || '[]')
+  let aa = []
+  if (q.accepted_answers) {
+    aa = Array.isArray(q.accepted_answers) ? q.accepted_answers : JSON.parse(q.accepted_answers)
+  }
   return {
-    question: q.question, opt_a: opts[0] || '', opt_b: opts[1] || '',
+    question: q.question, question_type: q.question_type || 'qcm',
+    opt_a: opts[0] || '', opt_b: opts[1] || '',
     opt_c: opts[2] || '', opt_d: opts[3] || '',
     is_multi: q.is_multi || false,
     correct_index: q.correct_index ?? 0,
     correct_indexes: parseCorrectIndexes(q),
+    accepted_answers: aa,
     explanation: q.explanation || ''
   }
 }
 
 function formToPayload(f, exerciseId, position) {
+  if (f.question_type === 'open') {
+    return {
+      exercise_id: exerciseId, question: f.question,
+      question_type: 'open',
+      accepted_answers: JSON.stringify(f.accepted_answers.filter(Boolean)),
+      options: null, is_multi: false, correct_index: null, correct_indexes: null,
+      explanation: f.explanation, position
+    }
+  }
   return {
     exercise_id: exerciseId, question: f.question,
+    question_type: 'qcm',
     options: JSON.stringify([f.opt_a, f.opt_b, f.opt_c, f.opt_d]),
     is_multi: f.is_multi,
     correct_index: f.is_multi ? (f.correct_indexes[0] ?? 0) : Number(f.correct_index),
     correct_indexes: f.is_multi ? JSON.stringify(f.correct_indexes) : null,
+    accepted_answers: null,
     explanation: f.explanation, position
   }
 }
@@ -151,37 +170,21 @@ export default function AdminExercises() {
         <div className="bg-white rounded-2xl p-6 shadow-sm mb-6 border border-blue-100">
           <h2 className="font-bold text-gray-900 mb-5">{editingQ ? 'Modifier la question' : 'Nouvelle question'}</h2>
           <form onSubmit={saveQ} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">Question *</label>
-              <textarea className="form-control" required rows={3} value={qForm.question} onChange={setQ('question')}
-                placeholder="ex: Quel est le principal mode de financement des clubs de football professionnels en France ?" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {['opt_a','opt_b','opt_c','opt_d'].map((key, i) => (
-                <div key={key}>
-                  <label className="block text-xs font-semibold text-gray-600 mb-1">Option {LETTERS[i]} *</label>
-                  <input className="form-control" required value={qForm[key]} onChange={setQ(key)}
-                    placeholder={`Option ${LETTERS[i]}`} />
-                </div>
-              ))}
-            </div>
-
-            {/* Type de réponse */}
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200">
-              <span className="text-xs font-semibold text-gray-600 flex-shrink-0">Type :</span>
+            {/* Type de question */}
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-50 border border-blue-100">
+              <span className="text-xs font-semibold text-gray-600 flex-shrink-0">Type de question :</span>
               <div className="flex gap-2 flex-wrap">
                 {[
-                  { multi: false, label: '⚪ Une seule bonne réponse' },
-                  { multi: true,  label: '☑️ Plusieurs bonnes réponses' },
-                ].map(({ multi, label }) => (
-                  <label key={String(multi)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer text-xs font-semibold transition-all ${
-                    qForm.is_multi === multi
-                      ? multi ? 'bg-purple-50 border-purple-400 text-purple-700' : 'bg-emerald-50 border-emerald-400 text-emerald-700'
-                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  { type: 'qcm',  label: '☑️ QCM' },
+                  { type: 'open', label: '✏️ Question ouverte' },
+                ].map(({ type, label }) => (
+                  <label key={type} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer text-xs font-semibold transition-all ${
+                    qForm.question_type === type
+                      ? 'bg-indigo-50 border-indigo-400 text-indigo-700'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300 bg-white'
                   }`}>
-                    <input type="radio" name="qtype" checked={qForm.is_multi === multi}
-                      onChange={() => setQForm(f => ({ ...f, is_multi: multi, correct_index: 0, correct_indexes: [] }))}
+                    <input type="radio" name="question_type" checked={qForm.question_type === type}
+                      onChange={() => setQForm(f => ({ ...f, question_type: type }))}
                       className="sr-only" />
                     {label}
                   </label>
@@ -189,41 +192,133 @@ export default function AdminExercises() {
               </div>
             </div>
 
-            {/* Bonne(s) réponse(s) */}
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-2">
-                Bonne{qForm.is_multi ? 's' : ''} réponse{qForm.is_multi ? 's' : ''} *
-                {qForm.is_multi && <span className="text-gray-400 font-normal ml-1">(cochez toutes les bonnes réponses)</span>}
-              </label>
-              <div className="flex gap-3 flex-wrap">
-                {LETTERS.map((l, i) => {
-                  const selected = qForm.is_multi
-                    ? qForm.correct_indexes.includes(i)
-                    : Number(qForm.correct_index) === i
-                  return (
-                    <label key={l} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border cursor-pointer text-sm font-semibold transition-all ${
-                      selected
-                        ? qForm.is_multi ? 'bg-purple-50 border-purple-400 text-purple-700' : 'bg-emerald-50 border-emerald-400 text-emerald-700'
-                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                    }`}>
-                      {qForm.is_multi ? (
-                        <input type="checkbox" checked={selected}
-                          onChange={() => setQForm(f => ({
-                            ...f,
-                            correct_indexes: selected
-                              ? f.correct_indexes.filter(x => x !== i)
-                              : [...f.correct_indexes, i]
-                          }))} className="sr-only" />
-                      ) : (
-                        <input type="radio" name="correct" value={i} checked={selected}
-                          onChange={() => setQForm(f => ({ ...f, correct_index: i }))} className="sr-only" />
-                      )}
-                      {l}
-                    </label>
-                  )
-                })}
-              </div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Question *</label>
+              <textarea className="form-control" required rows={3} value={qForm.question} onChange={setQ('question')}
+                placeholder={qForm.question_type === 'open'
+                  ? 'ex: Quel est le nom du trophée remis au meilleur joueur du monde ?'
+                  : 'ex: Quel est le principal mode de financement des clubs de football professionnels en France ?'} />
             </div>
+
+            {qForm.question_type === 'qcm' ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {['opt_a','opt_b','opt_c','opt_d'].map((key, i) => (
+                    <div key={key}>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Option {LETTERS[i]} *</label>
+                      <input className="form-control" required value={qForm[key]} onChange={setQ(key)}
+                        placeholder={`Option ${LETTERS[i]}`} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Type réponse QCM */}
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-200">
+                  <span className="text-xs font-semibold text-gray-600 flex-shrink-0">Sélection :</span>
+                  <div className="flex gap-2 flex-wrap">
+                    {[
+                      { multi: false, label: '⚪ Une seule réponse' },
+                      { multi: true,  label: '☑️ Plusieurs réponses' },
+                    ].map(({ multi, label }) => (
+                      <label key={String(multi)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer text-xs font-semibold transition-all ${
+                        qForm.is_multi === multi
+                          ? multi ? 'bg-purple-50 border-purple-400 text-purple-700' : 'bg-emerald-50 border-emerald-400 text-emerald-700'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}>
+                        <input type="radio" name="qtype" checked={qForm.is_multi === multi}
+                          onChange={() => setQForm(f => ({ ...f, is_multi: multi, correct_index: 0, correct_indexes: [] }))}
+                          className="sr-only" />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bonne(s) réponse(s) */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-2">
+                    Bonne{qForm.is_multi ? 's' : ''} réponse{qForm.is_multi ? 's' : ''} *
+                    {qForm.is_multi && <span className="text-gray-400 font-normal ml-1">(cochez toutes les bonnes)</span>}
+                  </label>
+                  <div className="flex gap-3 flex-wrap">
+                    {LETTERS.map((l, i) => {
+                      const selected = qForm.is_multi
+                        ? qForm.correct_indexes.includes(i)
+                        : Number(qForm.correct_index) === i
+                      return (
+                        <label key={l} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border cursor-pointer text-sm font-semibold transition-all ${
+                          selected
+                            ? qForm.is_multi ? 'bg-purple-50 border-purple-400 text-purple-700' : 'bg-emerald-50 border-emerald-400 text-emerald-700'
+                            : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                        }`}>
+                          {qForm.is_multi ? (
+                            <input type="checkbox" checked={selected}
+                              onChange={() => setQForm(f => ({
+                                ...f,
+                                correct_indexes: selected
+                                  ? f.correct_indexes.filter(x => x !== i)
+                                  : [...f.correct_indexes, i]
+                              }))} className="sr-only" />
+                          ) : (
+                            <input type="radio" name="correct" value={i} checked={selected}
+                              onChange={() => setQForm(f => ({ ...f, correct_index: i }))} className="sr-only" />
+                          )}
+                          {l}
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Open question — accepted answers */
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-semibold text-gray-600">
+                    Réponses acceptées *
+                    <span className="font-normal text-gray-400 ml-1">(toutes les formes correctes, avec tolérance orthographique automatique)</span>
+                  </label>
+                  <button type="button"
+                    onClick={() => setQForm(f => ({ ...f, accepted_answers: [...f.accepted_answers, ''] }))}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                    + Ajouter une forme
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {qForm.accepted_answers.length === 0 && (
+                    <button type="button"
+                      onClick={() => setQForm(f => ({ ...f, accepted_answers: [''] }))}
+                      className="w-full py-2.5 rounded-xl border-2 border-dashed border-gray-200 text-xs font-semibold text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-colors">
+                      + Ajouter la première réponse acceptée
+                    </button>
+                  )}
+                  {qForm.accepted_answers.map((ans, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <input
+                        className="form-control flex-1"
+                        value={ans}
+                        onChange={e => setQForm(f => {
+                          const aa = [...f.accepted_answers]
+                          aa[idx] = e.target.value
+                          return { ...f, accepted_answers: aa }
+                        })}
+                        placeholder={idx === 0 ? 'ex: Ballon d\'Or' : `Variante ${idx + 1} (ex: ballon d'or, Ballon d or…)`}
+                      />
+                      {qForm.accepted_answers.length > 1 && (
+                        <button type="button"
+                          onClick={() => setQForm(f => ({ ...f, accepted_answers: f.accepted_answers.filter((_, j) => j !== idx) }))}
+                          className="text-red-400 hover:text-red-600 font-bold text-lg w-6 flex-shrink-0">×</button>
+                      )}
+                    </div>
+                  ))}
+                  {qForm.accepted_answers.length > 0 && (
+                    <p className="text-[11px] text-indigo-600 font-medium px-1">
+                      💡 Les fautes d'orthographe légères seront automatiquement acceptées (ex : "Balon d'Or" → accepté)
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1">Explication (affichée après correction)</label>

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { getCoursesByModule } from '../services/coursesService'
 import { getExercises, getExerciseQuestions, saveExerciseResult } from '../services/exercisesService'
+import { saveAttempt } from '../services/progressService'
+import StudentDashboard from '../components/StudentDashboard'
 import PartnersScrollBanner from '../components/PartnersScrollBanner'
 
 const DIFF_COLOR = {
@@ -13,13 +15,57 @@ const DIFF_COLOR = {
 
 const LETTERS = ['A', 'B', 'C', 'D']
 
+/* ─── Fuzzy matching for open questions ───────────────────────── */
+function normalize(s) {
+  return String(s).toLowerCase().trim()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ')
+}
+
+function levenshtein(a, b) {
+  if (!a.length) return b.length
+  if (!b.length) return a.length
+  const m = a.length, n = b.length
+  const dp = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => i === 0 ? j : j === 0 ? i : 0)
+  )
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])
+  return dp[m][n]
+}
+
+function fuzzyMatch(userAnswer, acceptedAnswers) {
+  if (!userAnswer || !acceptedAnswers?.length) return false
+  const u = normalize(userAnswer)
+  if (!u) return false
+  return acceptedAnswers.some(ans => {
+    const a = normalize(ans)
+    if (!a) return false
+    if (u === a) return true
+    const maxDist = a.length <= 4 ? 0 : a.length <= 8 ? 1 : a.length <= 14 ? 2 : 3
+    return levenshtein(u, a) <= maxDist
+  })
+}
+
 function getCorrectIndexes(q) {
   if (!q.is_multi) return [q.correct_index]
   if (Array.isArray(q.correct_indexes)) return q.correct_indexes
   try { return JSON.parse(q.correct_indexes || '[]') } catch { return [] }
 }
 
+function getAcceptedAnswers(q) {
+  if (Array.isArray(q.accepted_answers)) return q.accepted_answers
+  if (q.accepted_answers) try { return JSON.parse(q.accepted_answers) } catch {}
+  return []
+}
+
 function isQuestionCorrect(q, selectedAnswer) {
+  if (q.question_type === 'open') {
+    return fuzzyMatch(String(selectedAnswer ?? ''), getAcceptedAnswers(q))
+  }
   const correctIdxs = getCorrectIndexes(q)
   if (q.is_multi) {
     const sel = Array.isArray(selectedAnswer) ? [...selectedAnswer].sort() : []
@@ -32,7 +78,7 @@ function isQuestionCorrect(q, selectedAnswer) {
 function ExercisePlayer({ exercise, onClose, user }) {
   const [questions,  setQuestions]  = useState([])
   const [loading,    setLoading]    = useState(true)
-  const [answers,    setAnswers]    = useState({})   // { [qIdx]: selectedIndex }
+  const [answers,    setAnswers]    = useState({})
   const [submitted,  setSubmitted]  = useState(false)
   const [result,     setResult]     = useState(null)
   const [startTime]                 = useState(Date.now())
@@ -44,6 +90,7 @@ function ExercisePlayer({ exercise, onClose, user }) {
   }, [exercise.id])
 
   const allAnswered = questions.length > 0 && questions.every((q, i) => {
+    if (q.question_type === 'open') return typeof answers[i] === 'string' && answers[i].trim().length > 0
     if (q.is_multi) return Array.isArray(answers[i]) && answers[i].length > 0
     return answers[i] !== undefined
   })
@@ -52,14 +99,33 @@ function ExercisePlayer({ exercise, onClose, user }) {
     const elapsed = Math.round((Date.now() - startTime) / 1000)
     let score = 0
     const answersArr = questions.map((q, i) => {
-      const sel = q.is_multi ? (Array.isArray(answers[i]) ? answers[i] : []) : (answers[i] ?? -1)
+      let sel
+      if (q.question_type === 'open') {
+        sel = answers[i] ?? ''
+      } else {
+        sel = q.is_multi ? (Array.isArray(answers[i]) ? answers[i] : []) : (answers[i] ?? -1)
+      }
       if (isQuestionCorrect(q, sel)) score++
       return sel
     })
+
     const { attemptNumber } = await saveExerciseResult({
       userId: user?.id, exerciseId: exercise.id,
       score, total: questions.length, answers: answersArr, timeSeconds: elapsed,
     })
+
+    /* Record per-question attempts */
+    if (user?.id) {
+      await Promise.all(questions.map((q, i) => saveAttempt({
+        userId: user.id,
+        questionId: q.id,
+        exerciseId: exercise.id,
+        chapterId: exercise.chapter_id || null,
+        userAnswer: answersArr[i],
+        isCorrect: isQuestionCorrect(q, answersArr[i]),
+      })))
+    }
+
     const pct = Math.round((score / questions.length) * 100)
     const wrongIdxs = questions.map((q, i) => isQuestionCorrect(q, answersArr[i]) ? null : i).filter(i => i !== null)
     setResult({ score, total: questions.length, pct, elapsed, attemptNumber: attemptNumber ?? 1, wrongIdxs, answersArr })
@@ -67,10 +133,10 @@ function ExercisePlayer({ exercise, onClose, user }) {
   }
 
   function badge(pct) {
-    if (pct === 100) return { label: '🏆 Parfait !',    color: '#065f46', bg: 'rgba(16,185,129,.12)' }
-    if (pct >= 80)   return { label: '🎉 Excellent',    color: '#065f46', bg: 'rgba(16,185,129,.10)' }
-    if (pct >= 60)   return { label: '💪 Bien joué',    color: '#92400e', bg: 'rgba(245,158,11,.12)' }
-    return               { label: '📖 À réviser',       color: '#991b1b', bg: 'rgba(239,68,68,.10)' }
+    if (pct === 100) return { label: '🏆 Parfait !',  color: '#065f46', bg: 'rgba(16,185,129,.12)' }
+    if (pct >= 80)   return { label: '🎉 Excellent',  color: '#065f46', bg: 'rgba(16,185,129,.10)' }
+    if (pct >= 60)   return { label: '💪 Bien joué',  color: '#92400e', bg: 'rgba(245,158,11,.12)' }
+    return               { label: '📖 À réviser',     color: '#991b1b', bg: 'rgba(239,68,68,.10)' }
   }
 
   function fmtTime(s) {
@@ -114,57 +180,84 @@ function ExercisePlayer({ exercise, onClose, user }) {
               <p className="text-sm text-gray-500">{questions.length} question{questions.length > 1 ? 's' : ''} — répondez à toutes pour valider</p>
 
               {questions.map((q, qi) => {
-                const opts = Array.isArray(q.options) ? q.options : JSON.parse(q.options || '[]')
+                const isOpen = q.question_type === 'open'
+                const opts = isOpen ? [] : (Array.isArray(q.options) ? q.options : JSON.parse(q.options || '[]'))
                 return (
                   <div key={q.id}>
                     <div className="mb-3">
-                      {q.is_multi && (
+                      {isOpen ? (
+                        <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 mb-1.5">
+                          ✏️ Question ouverte
+                        </span>
+                      ) : q.is_multi ? (
                         <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 mb-1.5">
                           ☑️ Plusieurs bonnes réponses possibles
                         </span>
-                      )}
+                      ) : null}
                       <p className="font-semibold text-[14px] text-gray-900 leading-snug">
                         <span className="text-gray-400 font-bold mr-2">{qi + 1}.</span>{q.question}
                       </p>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      {opts.map((opt, oi) => {
-                        const selected = q.is_multi
-                          ? (Array.isArray(answers[qi]) && answers[qi].includes(oi))
-                          : answers[qi] === oi
-                        const accentColor = q.is_multi ? '#7c3aed' : 'var(--sf-primary)'
-                        const toggleAnswer = () => {
-                          if (q.is_multi) {
-                            setAnswers(a => {
-                              const cur = Array.isArray(a[qi]) ? a[qi] : []
-                              return { ...a, [qi]: cur.includes(oi) ? cur.filter(x => x !== oi) : [...cur, oi] }
-                            })
-                          } else {
-                            setAnswers(a => ({ ...a, [qi]: oi }))
+
+                    {isOpen ? (
+                      <div>
+                        <input
+                          type="text"
+                          className="w-full px-4 py-3 rounded-xl text-[13px] font-medium transition-all"
+                          style={{
+                            border: answers[qi] ? '2px solid var(--sf-primary)' : '1.5px solid var(--sf-border)',
+                            background: answers[qi] ? 'rgba(11,37,69,.03)' : 'var(--sf-surface)',
+                            color: 'var(--sf-text)',
+                            outline: 'none',
+                          }}
+                          placeholder="Votre réponse…"
+                          value={answers[qi] ?? ''}
+                          onChange={e => setAnswers(a => ({ ...a, [qi]: e.target.value }))}
+                        />
+                        <p className="text-[11px] mt-1 pl-1" style={{ color: 'var(--sf-muted)' }}>
+                          Les fautes légères seront acceptées automatiquement.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {opts.map((opt, oi) => {
+                          const selected = q.is_multi
+                            ? (Array.isArray(answers[qi]) && answers[qi].includes(oi))
+                            : answers[qi] === oi
+                          const accentColor = q.is_multi ? '#7c3aed' : 'var(--sf-primary)'
+                          const toggleAnswer = () => {
+                            if (q.is_multi) {
+                              setAnswers(a => {
+                                const cur = Array.isArray(a[qi]) ? a[qi] : []
+                                return { ...a, [qi]: cur.includes(oi) ? cur.filter(x => x !== oi) : [...cur, oi] }
+                              })
+                            } else {
+                              setAnswers(a => ({ ...a, [qi]: oi }))
+                            }
                           }
-                        }
-                        return (
-                          <button key={oi} onClick={toggleAnswer}
-                            className="w-full text-left px-4 py-3 rounded-xl text-[13px] font-medium transition-all flex items-center gap-3"
-                            style={{
-                              border: selected ? `2px solid ${accentColor}` : '1.5px solid var(--sf-border)',
-                              background: selected ? (q.is_multi ? 'rgba(124,58,237,.05)' : 'rgba(11,37,69,.05)') : 'var(--sf-surface)',
-                              color: 'var(--sf-text)',
-                            }}>
-                            <span className="w-6 h-6 flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                          return (
+                            <button key={oi} onClick={toggleAnswer}
+                              className="w-full text-left px-4 py-3 rounded-xl text-[13px] font-medium transition-all flex items-center gap-3"
                               style={{
-                                borderRadius: q.is_multi ? '4px' : '50%',
-                                background: selected ? accentColor : 'var(--sf-border)',
-                                color: selected ? '#fff' : 'var(--sf-muted)',
+                                border: selected ? `2px solid ${accentColor}` : '1.5px solid var(--sf-border)',
+                                background: selected ? (q.is_multi ? 'rgba(124,58,237,.05)' : 'rgba(11,37,69,.05)') : 'var(--sf-surface)',
+                                color: 'var(--sf-text)',
                               }}>
-                              {q.is_multi ? (selected ? '✓' : '') : LETTERS[oi]}
-                            </span>
-                            <span className="font-semibold mr-1" style={{ color: 'var(--sf-muted)', fontSize: 11 }}>{LETTERS[oi]}.</span>
-                            {opt}
-                          </button>
-                        )
-                      })}
-                    </div>
+                              <span className="w-6 h-6 flex items-center justify-center text-[11px] font-bold flex-shrink-0"
+                                style={{
+                                  borderRadius: q.is_multi ? '4px' : '50%',
+                                  background: selected ? accentColor : 'var(--sf-border)',
+                                  color: selected ? '#fff' : 'var(--sf-muted)',
+                                }}>
+                                {q.is_multi ? (selected ? '✓' : '') : LETTERS[oi]}
+                              </span>
+                              <span className="font-semibold mr-1" style={{ color: 'var(--sf-muted)', fontSize: 11 }}>{LETTERS[oi]}.</span>
+                              {opt}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -178,7 +271,6 @@ function ExercisePlayer({ exercise, onClose, user }) {
           ) : (
             /* ── Correction ── */
             <div className="p-6">
-              {/* Score card */}
               {result && (() => {
                 const b = badge(result.pct)
                 return (
@@ -189,8 +281,8 @@ function ExercisePlayer({ exercise, onClose, user }) {
                     <div className="text-[13px] font-bold mb-2" style={{ color: b.color }}>{b.label}</div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                       {[
-                        { val: `${result.pct}%`,                             label: 'Réussite' },
-                        { val: fmtTime(result.elapsed),                       label: 'Temps' },
+                        { val: `${result.pct}%`, label: 'Réussite' },
+                        { val: fmtTime(result.elapsed), label: 'Temps' },
                         { val: `${result.attemptNumber}${result.attemptNumber === 1 ? 'ère' : 'ème'}`, label: 'Tentative' },
                         { val: `${result.total - result.wrongIdxs.length}/${result.total}`, label: 'Correctes' },
                       ].map(({ val, label }) => (
@@ -212,11 +304,51 @@ function ExercisePlayer({ exercise, onClose, user }) {
               {/* Per-question correction */}
               <div className="space-y-6">
                 {questions.map((q, qi) => {
-                  const opts        = Array.isArray(q.options) ? q.options : JSON.parse(q.options || '[]')
-                  const correctIdxs = getCorrectIndexes(q)
-                  const rawSel      = result.answersArr[qi]
-                  const selArr      = q.is_multi ? (Array.isArray(rawSel) ? rawSel : []) : (rawSel ?? -1) >= 0 ? [rawSel] : []
-                  const isOk        = isQuestionCorrect(q, q.is_multi ? selArr : (rawSel ?? -1))
+                  const isOpen = q.question_type === 'open'
+                  const opts = isOpen ? [] : (Array.isArray(q.options) ? q.options : JSON.parse(q.options || '[]'))
+                  const correctIdxs = isOpen ? [] : getCorrectIndexes(q)
+                  const rawSel = result.answersArr[qi]
+                  const isOk = isQuestionCorrect(q, rawSel)
+
+                  if (isOpen) {
+                    const acceptedAnswers = getAcceptedAnswers(q)
+                    return (
+                      <div key={q.id}>
+                        <div className="flex items-start gap-2 mb-2">
+                          <span className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold mt-0.5 ${isOk ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
+                            {isOk ? '✓' : '✗'}
+                          </span>
+                          <div>
+                            <span className="inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 mb-1">✏️ Question ouverte</span>
+                            <p className="font-semibold text-[13px] text-gray-900 leading-snug">{qi + 1}. {q.question}</p>
+                          </div>
+                        </div>
+                        <div className="pl-7 space-y-2">
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium"
+                            style={isOk
+                              ? { border: '2px solid #10b981', background: 'rgba(16,185,129,.08)', color: '#065f46' }
+                              : { border: '2px solid #ef4444', background: 'rgba(239,68,68,.06)', color: '#991b1b' }}>
+                            <span className="font-bold">Votre réponse :</span> {rawSel || '(vide)'}
+                            {isOk && <span className="ml-auto font-bold text-emerald-600">✓</span>}
+                          </div>
+                          {!isOk && acceptedAnswers.length > 0 && (
+                            <div className="px-3 py-2 rounded-lg text-[12px]"
+                              style={{ border: '1.5px solid rgba(16,185,129,.3)', background: 'rgba(16,185,129,.05)', color: '#065f46' }}>
+                              <span className="font-bold">Réponses acceptées :</span>{' '}
+                              {acceptedAnswers.join(' / ')}
+                            </div>
+                          )}
+                        </div>
+                        {q.explanation && (
+                          <div className="mt-2 pl-7 text-[12px] text-gray-600 leading-relaxed border-l-2 border-indigo-200 pl-4 ml-7 italic">
+                            💡 {q.explanation}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+
+                  const selArr = q.is_multi ? (Array.isArray(rawSel) ? rawSel : []) : (rawSel ?? -1) >= 0 ? [rawSel] : []
                   return (
                     <div key={q.id}>
                       <div className="flex items-start gap-2 mb-2">
@@ -237,8 +369,8 @@ function ExercisePlayer({ exercise, onClose, user }) {
                           const isCorrectOpt  = correctIdxs.includes(oi)
                           const isSelectedOpt = selArr.includes(oi)
                           let style = { border: '1.5px solid var(--sf-border)', background: 'transparent', color: 'var(--sf-muted)' }
-                          if (isCorrectOpt)                          style = { border: '2px solid #10b981', background: 'rgba(16,185,129,.08)', color: '#065f46' }
-                          else if (isSelectedOpt && !isCorrectOpt)   style = { border: '2px solid #ef4444', background: 'rgba(239,68,68,.06)', color: '#991b1b', textDecoration: 'line-through' }
+                          if (isCorrectOpt)                         style = { border: '2px solid #10b981', background: 'rgba(16,185,129,.08)', color: '#065f46' }
+                          else if (isSelectedOpt && !isCorrectOpt) style = { border: '2px solid #ef4444', background: 'rgba(239,68,68,.06)', color: '#991b1b', textDecoration: 'line-through' }
                           return (
                             <div key={oi} className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium" style={style}>
                               <span className="font-bold w-4 flex-shrink-0">{LETTERS[oi]}.</span>
@@ -276,7 +408,7 @@ function ExercisePlayer({ exercise, onClose, user }) {
   )
 }
 
-/* ─── Course Item (nested, with PDF) ──────────────────────────── */
+/* ─── Course Item ─────────────────────────────────────────────── */
 function CourseItem({ course, idx, exercises }) {
   const [open, setOpen] = useState(false)
   const linked = exercises.filter(ex => ex.chapter_id === course.id)
@@ -451,8 +583,9 @@ export default function Courses() {
   const totalCourses = modules.reduce((s, m) => s + m.courses.length, 0)
 
   const TABS = [
-    { id: 'programme', label: 'Programme' },
-    { id: 'exercices', label: `Exercices${exercises.length > 0 ? ` (${exercises.length})` : ''}` },
+    { id: 'programme', label: '📚 Programme',    count: null },
+    { id: 'exercices', label: '✏️ Exercices',    count: exercises.length > 0 ? exercises.length : null },
+    { id: 'dashboard', label: '📊 Mon Dashboard', count: null },
   ]
 
   return (
@@ -498,16 +631,24 @@ export default function Courses() {
       {/* Partners banner */}
       <PartnersScrollBanner />
 
-      {/* Tabs */}
-      <div className="sticky top-[64px] z-10 border-b" style={{ background: 'var(--sf-surface)', borderColor: 'var(--sf-border)' }}>
+      {/* Tabs — visible, prominent */}
+      <div className="sticky top-[64px] z-10 border-b shadow-sm" style={{ background: 'var(--sf-surface)', borderColor: 'var(--sf-border)' }}>
         <div className="max-w-[1360px] mx-auto px-6 lg:px-10 flex">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className="py-3.5 px-5 text-[13px] font-semibold border-b-2 transition-all -mb-px"
+              className="py-4 px-6 text-[13.5px] font-bold border-b-[3px] transition-all -mb-px flex items-center gap-1.5"
               style={tab === t.id
-                ? { borderColor: 'var(--sf-accent)', color: 'var(--sf-primary)' }
+                ? { borderColor: 'var(--sf-accent)', color: 'var(--sf-primary)', background: 'rgba(201,168,76,.04)' }
                 : { borderColor: 'transparent', color: 'var(--sf-muted)' }}>
               {t.label}
+              {t.count !== null && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-0.5"
+                  style={tab === t.id
+                    ? { background: 'var(--sf-primary)', color: '#fff' }
+                    : { background: 'var(--sf-border)', color: 'var(--sf-muted)' }}>
+                  {t.count}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -589,7 +730,7 @@ export default function Courses() {
                 {loading ? 'Chargement…' : exercises.length > 0 ? `${exercises.length} Exercices pratiques` : 'Exercices pratiques'}
               </h2>
               <p className="section-sub text-[14px]">
-                QCM auto-corrigés — répondez à toutes les questions puis obtenez votre score et la correction détaillée.
+                QCM et questions ouvertes — répondez à toutes les questions puis obtenez votre score et la correction détaillée.
               </p>
             </div>
 
@@ -604,6 +745,11 @@ export default function Courses() {
               </div>
             )}
           </>
+        )}
+
+        {/* DASHBOARD */}
+        {tab === 'dashboard' && (
+          <StudentDashboard user={user} />
         )}
       </div>
     </div>
