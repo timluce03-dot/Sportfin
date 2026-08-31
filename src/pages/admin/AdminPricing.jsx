@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
-const EMPTY = { name: '', price: '', period: '/mois', subtitle: '', highlighted: false, cta_label: 'Commencer', position: 0, published: true }
+const EMPTY = { name: '', price: '', period: '/mois', subtitle: '', engagement: '', highlighted: false, cta_label: 'Commencer', position: 0, published: true }
 
 async function moveItem(item, dir, items, load) {
   const idx = items.findIndex(i => i.id === item.id)
@@ -107,6 +107,11 @@ export default function AdminPricing() {
               </label>
               <textarea className="form-control font-mono text-xs" rows={8} value={featText} onChange={e => setFeatText(e.target.value)}
                 placeholder="Accès à tous les cours&#10;Quiz illimités&#10;Attestation de fin de formation&#10;…" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Engagement</label>
+              <input className="form-control" value={form.engagement} onChange={set('engagement')}
+                placeholder="ex: Engagement 3 mois minimum" />
             </div>
             <div className="flex flex-wrap items-center gap-6">
               <label className="flex items-center gap-2 cursor-pointer">

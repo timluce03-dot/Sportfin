@@ -50,6 +50,12 @@ function PlanCard({ plan, idx, total, loading }) {
             </li>
           ))}
         </ul>
+        {plan.engagement && (
+          <p className="text-center text-[11px] mb-3 px-2 py-1.5 rounded-lg"
+            style={{ color: 'var(--sf-muted)', background: 'var(--sf-bg)', border: '1px solid var(--sf-border)' }}>
+            🔒 {plan.engagement}
+          </p>
+        )}
         <Link to="/profil" className={`btn w-full justify-center ${btnClass}`}>
           {plan.cta_label || 'Commencer'}
         </Link>
