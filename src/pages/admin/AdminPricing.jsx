@@ -20,6 +20,7 @@ export default function AdminPricing() {
   const [editing,   setEditing]   = useState(null)
   const [showForm,  setShowForm]  = useState(false)
   const [saving,    setSaving]    = useState(false)
+  const [saveErr,   setSaveErr]   = useState(null)
 
   async function load() {
     const { data } = await supabase.from('plans').select('*').order('position')
@@ -39,13 +40,15 @@ export default function AdminPricing() {
   }
 
   async function save(ev) {
-    ev.preventDefault(); setSaving(true)
+    ev.preventDefault(); setSaving(true); setSaveErr(null)
     const features = featText.split('\n').map(s => s.trim()).filter(Boolean)
     const payload = { ...form, features, position: Number(form.position) }
-    editing
+    const { error } = editing
       ? await supabase.from('plans').update(payload).eq('id', editing)
       : await supabase.from('plans').insert(payload)
-    setSaving(false); setShowForm(false); load()
+    setSaving(false)
+    if (error) { setSaveErr(error.message); return }
+    setShowForm(false); load()
   }
 
   async function remove(id) {
@@ -115,6 +118,9 @@ export default function AdminPricing() {
                 <span className="text-sm font-medium text-gray-700">Publier</span>
               </label>
             </div>
+            {saveErr && (
+              <div className="md:col-span-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2">{saveErr}</div>
+            )}
             <div className="md:col-span-2 flex gap-3">
               <button type="submit" disabled={saving} className="btn-primary text-sm px-5 py-2 disabled:opacity-60">
                 {saving ? 'Enregistrement…' : editing ? 'Mettre à jour' : 'Créer'}
