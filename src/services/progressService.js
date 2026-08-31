@@ -11,16 +11,18 @@ export async function saveAttempt({ userId, questionId, exerciseId, courseId, ch
     user_answer: typeof userAnswer === 'string' ? userAnswer : JSON.stringify(userAnswer),
     is_correct: isCorrect,
   })
+  if (error) console.error('saveAttempt error:', error.message)
   return { saved: !error }
 }
 
 export async function getExerciseAttempts(userId) {
   if (!userId) return []
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('exercise_attempts')
-    .select('*, exercise_questions(id, question, question_type, explanation, exercise_id)')
+    .select('*')
     .eq('user_id', userId)
     .order('attempted_at', { ascending: false })
+  if (error) console.error('getExerciseAttempts error:', error.message)
   return data ?? []
 }
 

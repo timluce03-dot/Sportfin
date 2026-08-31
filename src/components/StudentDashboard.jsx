@@ -162,7 +162,7 @@ export default function StudentDashboard({ user }) {
     .filter(([, n]) => n >= 2)
     .map(([qid, n]) => {
       const a = attempts.find(x => x.question_id === qid)
-      return { qid, n, question: a?.exercise_questions?.question || 'Question', lastAnswer: a?.user_answer }
+      return { qid, n, question: a?.question || 'Question', lastAnswer: a?.user_answer }
     })
     .sort((a, b) => b.n - a.n)
     .slice(0, 5)
@@ -328,7 +328,7 @@ export default function StudentDashboard({ user }) {
                 <span className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5 bg-red-100 text-red-600">✗</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[12.5px] font-medium leading-snug" style={{ color: 'var(--sf-text)' }}>
-                    {a.exercise_questions?.question || 'Question'}
+                    {a.question || `Exercice ${a.exercise_id?.slice(0, 8) || '?'}`}
                   </p>
                   <p className="text-[11px] mt-0.5" style={{ color: 'var(--sf-muted)' }}>
                     Votre réponse : <em>"{a.user_answer}"</em>
