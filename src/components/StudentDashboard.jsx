@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getExerciseAttempts } from '../services/progressService'
+import { getExerciseAttempts, getExerciseResults } from '../services/progressService'
 
 const LEVEL_THRESHOLDS = [
   { min: 0,   max: 20,  label: 'Débutant',      icon: '🌱', color: '#6b7280', bg: 'rgba(107,114,128,.1)' },

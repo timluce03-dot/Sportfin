@@ -26,6 +26,17 @@ export async function getExerciseAttempts(userId) {
   return data ?? []
 }
 
+export async function getExerciseResults(userId) {
+  if (!userId) return []
+  const { data, error } = await supabase
+    .from('exercise_results')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+  if (error) console.error('getExerciseResults error:', error.message)
+  return data ?? []
+}
+
 export async function markChapterComplete({ userId, courseId, chapterId }) {
   if (!userId) return
   await supabase.from('course_progress').upsert(
