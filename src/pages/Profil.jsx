@@ -39,67 +39,104 @@ const VALUE_PROPS = [
   },
 ]
 
+const STYLES = {
+  default: {
+    wrap:   { background: 'var(--sf-surface)', border: '1px solid var(--sf-border)', boxShadow: 'var(--sf-shadow-sm)' },
+    name:   '#0B2545',
+    sub:    'var(--sf-muted)',
+    price:  'var(--sf-primary)',
+    period: 'var(--sf-muted)',
+    check:  'var(--sf-accent)',
+    text:   'var(--sf-text-2,#374151)',
+    engBg:  'var(--sf-bg)', engBorder: 'var(--sf-border)', engColor: 'var(--sf-muted)',
+    btn:    { background: '#e5e7eb', color: '#374151' },
+    badge:  null,
+  },
+  featured: {
+    wrap:   { background: 'linear-gradient(160deg,#0B2545,#163b6b)', border: 'none', boxShadow: '0 16px 48px rgba(11,37,69,.35)', transform: 'scale(1.04)' },
+    name:   '#fff',
+    sub:    'rgba(255,255,255,.55)',
+    price:  '#fff',
+    period: 'rgba(255,255,255,.5)',
+    check:  '#C9A84C',
+    text:   'rgba(255,255,255,.78)',
+    engBg:  'rgba(255,255,255,.08)', engBorder: 'rgba(255,255,255,.15)', engColor: 'rgba(255,255,255,.5)',
+    btn:    { background: '#C9A84C', color: '#071a32', fontWeight: 700 },
+    badge:  { label: '⭐ LE PLUS POPULAIRE', bg: '#C9A84C', color: '#071a32' },
+  },
+  gold: {
+    wrap:   { background: 'linear-gradient(150deg,#1a0e00 0%,#2d1800 50%,#1a0e00 100%)', border: '1px solid #7a5c1e', boxShadow: '0 16px 48px rgba(201,168,76,.25)' },
+    name:   '#C9A84C',
+    sub:    'rgba(201,168,76,.6)',
+    price:  '#f0d080',
+    period: 'rgba(240,208,128,.5)',
+    check:  '#f0d080',
+    text:   'rgba(240,208,128,.85)',
+    engBg:  'rgba(201,168,76,.08)', engBorder: 'rgba(201,168,76,.2)', engColor: 'rgba(201,168,76,.6)',
+    btn:    { background: 'linear-gradient(135deg,#b8892e,#C9A84C,#b8892e)', color: '#1a0e00', fontWeight: 800, letterSpacing: '0.03em' },
+    badge:  { label: '🥇 MODULE GOLD', bg: 'linear-gradient(135deg,#b8892e,#f0d080)', color: '#1a0e00' },
+  },
+  premium: {
+    wrap:   { background: 'linear-gradient(150deg,#071a32 0%,#0d2d57 60%,#071a32 100%)', border: '1.5px solid rgba(201,168,76,.4)', boxShadow: '0 16px 48px rgba(7,26,50,.5)' },
+    name:   '#fff',
+    sub:    'rgba(201,168,76,.7)',
+    price:  '#C9A84C',
+    period: 'rgba(201,168,76,.5)',
+    check:  '#C9A84C',
+    text:   'rgba(255,255,255,.75)',
+    engBg:  'rgba(201,168,76,.07)', engBorder: 'rgba(201,168,76,.2)', engColor: 'rgba(201,168,76,.55)',
+    btn:    { background: 'rgba(201,168,76,.15)', color: '#C9A84C', border: '1px solid rgba(201,168,76,.4)', fontWeight: 700 },
+    badge:  { label: '💎 CERTIFICATION', bg: 'rgba(201,168,76,.15)', color: '#C9A84C', border: '1px solid rgba(201,168,76,.35)' },
+  },
+}
+
 function PricingCard({ plan }) {
-  const isFeatured = plan.highlighted
-  const features   = Array.isArray(plan.features) ? plan.features : []
+  const s        = STYLES[plan.card_style] || STYLES.default
+  const features = Array.isArray(plan.features) ? plan.features : []
 
   return (
-    <div className="relative rounded-2xl flex flex-col p-6"
-      style={{
-        background: isFeatured ? 'var(--sf-primary)' : 'var(--sf-surface)',
-        border: isFeatured ? 'none' : '1px solid var(--sf-border)',
-        boxShadow: isFeatured ? '0 12px 40px rgba(11,37,69,.28)' : 'var(--sf-shadow-sm)',
-        transform: isFeatured ? 'scale(1.03)' : undefined,
-      }}>
-      {isFeatured && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[10px] font-bold text-white whitespace-nowrap"
-          style={{ background: 'var(--sf-accent)' }}>
-          LE PLUS POPULAIRE
+    <div className="relative rounded-2xl flex flex-col p-6 transition-transform duration-200 hover:-translate-y-1" style={s.wrap}>
+      {s.badge && (
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-extrabold whitespace-nowrap tracking-wide"
+          style={{ background: s.badge.bg, color: s.badge.color, border: s.badge.border }}>
+          {s.badge.label}
         </div>
       )}
-      <div className="mb-4">
-        <div className="font-serif font-extrabold text-[17px] mb-0.5"
-          style={{ color: isFeatured ? '#fff' : 'var(--sf-text)' }}>{plan.name}</div>
-        {plan.subtitle && (
-          <div className="text-[11px] font-medium"
-            style={{ color: isFeatured ? 'rgba(255,255,255,.55)' : 'var(--sf-muted)' }}>{plan.subtitle}</div>
-        )}
+
+      {/* Name + subtitle */}
+      <div className="mb-4 mt-1">
+        <div className="font-serif font-extrabold text-[18px] mb-0.5" style={{ color: s.name }}>{plan.name}</div>
+        {plan.subtitle && <div className="text-[11.5px] font-medium" style={{ color: s.sub }}>{plan.subtitle}</div>}
       </div>
-      <div className="mb-5 flex items-end gap-0.5">
-        <span className="font-serif font-black leading-none"
-          style={{ fontSize: 34, color: isFeatured ? '#fff' : 'var(--sf-primary)' }}>
+
+      {/* Price */}
+      <div className="mb-5 flex items-end gap-1">
+        <span className="font-serif font-black leading-none" style={{ fontSize: 36, color: s.price }}>
           {plan.price === 0 || plan.price === '0' ? 'Gratuit' : `${plan.price}€`}
         </span>
-        {plan.period && (
-          <span className="text-[12px] pb-0.5"
-            style={{ color: isFeatured ? 'rgba(255,255,255,.5)' : 'var(--sf-muted)' }}>{plan.period}</span>
-        )}
+        {plan.period && <span className="text-[12px] pb-1" style={{ color: s.period }}>{plan.period}</span>}
       </div>
-      <ul className="flex-1 space-y-2.5 mb-4">
+
+      {/* Features */}
+      <ul className="flex-1 space-y-2.5 mb-5">
         {features.map((f, i) => (
-          <li key={i} className="flex items-start gap-2 text-[12.5px]"
-            style={{ color: isFeatured ? 'rgba(255,255,255,.78)' : 'var(--sf-text-2, #374151)' }}>
-            <span className="mt-[1px] flex-shrink-0 font-bold text-[13px]"
-              style={{ color: isFeatured ? 'rgba(201,168,76,.9)' : 'var(--sf-accent)' }}>✓</span>
+          <li key={i} className="flex items-start gap-2 text-[12.5px]" style={{ color: s.text }}>
+            <span className="mt-[1px] flex-shrink-0 font-bold text-[13px]" style={{ color: s.check }}>✓</span>
             {f}
           </li>
         ))}
       </ul>
+
+      {/* Engagement */}
       {plan.engagement && (
         <p className="text-center text-[11px] mb-3 px-2 py-1.5 rounded-lg"
-          style={{
-            color: isFeatured ? 'rgba(255,255,255,.5)' : 'var(--sf-muted)',
-            background: isFeatured ? 'rgba(255,255,255,.08)' : 'var(--sf-bg)',
-            border: `1px solid ${isFeatured ? 'rgba(255,255,255,.15)' : 'var(--sf-border)'}`,
-          }}>
+          style={{ color: s.engColor, background: s.engBg, border: `1px solid ${s.engBorder}` }}>
           🔒 {plan.engagement}
         </p>
       )}
-      <Link to="/tarifs"
-        className="btn w-full justify-center text-[13px] font-semibold"
-        style={isFeatured
-          ? { background: 'var(--sf-accent)', color: '#2a1a00' }
-          : { background: 'var(--sf-primary)', color: '#fff' }}>
+
+      {/* CTA */}
+      <Link to="/tarifs" className="btn w-full justify-center text-[13px] rounded-xl py-2.5" style={s.btn}>
         {plan.cta_label || 'Commencer'}
       </Link>
     </div>

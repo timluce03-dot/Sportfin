@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
-const EMPTY = { name: '', price: '', period: '/mois', subtitle: '', engagement: '', highlighted: false, cta_label: 'Commencer', position: 0, published: true }
+const EMPTY = { name: '', price: '', period: '/mois', subtitle: '', engagement: '', card_style: 'default', highlighted: false, cta_label: 'Commencer', position: 0, published: true }
+
+const CARD_STYLES = [
+  { value: 'default',   label: '⬜ Standard (blanc)' },
+  { value: 'featured',  label: '🔵 Mis en avant (bleu foncé)' },
+  { value: 'gold',      label: '🥇 Gold (doré / noir)' },
+  { value: 'premium',   label: '💎 Premium (bleu + or)' },
+]
 
 async function moveItem(item, dir, items, load) {
   const idx = items.findIndex(i => i.id === item.id)
@@ -95,6 +102,12 @@ export default function AdminPricing() {
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1">Texte du bouton CTA</label>
               <input className="form-control" value={form.cta_label} onChange={set('cta_label')} placeholder="ex: Commencer" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Style de la carte</label>
+              <select className="form-control" value={form.card_style} onChange={set('card_style')}>
+                {CARD_STYLES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1">Position (ordre)</label>
