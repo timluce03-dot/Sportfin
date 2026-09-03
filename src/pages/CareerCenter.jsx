@@ -15,32 +15,46 @@ const PAGE_SIZE  = 20
 function Pagination({ page, total, onPage }) {
   const pages = Math.ceil(total / PAGE_SIZE)
   if (pages <= 1) return null
-  const nums = Array.from({ length: pages }, (_, i) => i + 1)
+
+  /* Show at most 5 page numbers centered around current page */
+  const delta = 2
+  let start = Math.max(1, page - delta)
+  let end   = Math.min(pages, page + delta)
+  if (end - start < 4) {
+    if (start === 1) end   = Math.min(pages, start + 4)
+    else             start = Math.max(1, end - 4)
+  }
+  const nums = Array.from({ length: end - start + 1 }, (_, i) => start + i)
+
+  const Btn = ({ onClick, disabled, children, active }) => (
+    <button onClick={onClick} disabled={disabled}
+      className="w-9 h-9 rounded-xl text-[13px] font-bold transition-all flex items-center justify-center disabled:opacity-25"
+      style={active
+        ? { background: 'var(--sf-primary)', color: '#fff' }
+        : { background: 'var(--sf-surface)', border: '1px solid var(--sf-border)', color: 'var(--sf-muted)' }}>
+      {children}
+    </button>
+  )
+
   return (
-    <div className="flex items-center justify-center gap-2 mt-10 flex-wrap">
-      <button
-        onClick={() => onPage(page - 1)} disabled={page === 1}
-        className="px-3 py-2 rounded-xl text-[13px] font-semibold transition-colors disabled:opacity-30"
-        style={{ background: 'var(--sf-surface)', border: '1px solid var(--sf-border)', color: 'var(--sf-primary)' }}>
-        ← Précédent
-      </button>
-      <div className="flex items-center gap-1.5">
-        {nums.map(p => (
-          <button key={p} onClick={() => onPage(p)}
-            className="w-9 h-9 rounded-xl text-[13px] font-bold transition-all"
-            style={p === page
-              ? { background: 'var(--sf-primary)', color: '#fff' }
-              : { background: 'var(--sf-surface)', border: '1px solid var(--sf-border)', color: 'var(--sf-muted)' }}>
-            {p}
-          </button>
-        ))}
-      </div>
-      <button
-        onClick={() => onPage(page + 1)} disabled={page === pages}
-        className="px-3 py-2 rounded-xl text-[13px] font-semibold transition-colors disabled:opacity-30"
-        style={{ background: 'var(--sf-surface)', border: '1px solid var(--sf-border)', color: 'var(--sf-primary)' }}>
-        Suivant →
-      </button>
+    <div className="flex items-center justify-center gap-1.5 mt-10 flex-wrap">
+      {/* First */}
+      <Btn onClick={() => onPage(1)} disabled={page === 1}>«</Btn>
+      {/* Prev */}
+      <Btn onClick={() => onPage(page - 1)} disabled={page === 1}>‹</Btn>
+
+      {start > 1 && <span className="text-[12px] px-1" style={{ color: 'var(--sf-muted)' }}>…</span>}
+
+      {nums.map(p => (
+        <Btn key={p} onClick={() => onPage(p)} active={p === page}>{p}</Btn>
+      ))}
+
+      {end < pages && <span className="text-[12px] px-1" style={{ color: 'var(--sf-muted)' }}>…</span>}
+
+      {/* Next */}
+      <Btn onClick={() => onPage(page + 1)} disabled={page === pages}>›</Btn>
+      {/* Last */}
+      <Btn onClick={() => onPage(pages)} disabled={page === pages}>»</Btn>
     </div>
   )
 }
