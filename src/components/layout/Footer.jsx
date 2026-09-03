@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 const COLS = [
   { title: 'Formation', links: [['Cours', '/cours'], ['Certification', '/certification'], ['Quiz Sport', '/quiz'], ['Entretiens', '/entretiens']] },
   { title: 'Ressources', links: [['Articles', '/articles'], ['Podcasts & Interviews', '/podcasts'], ['Career Center', '/career']] },
-  { title: 'Compte', links: [['Se connecter', '/profil'], ['Créer un compte', '/profil'], ['Mon espace', '/dashboard'], ['Tarifs', '/tarifs']] },
+  { title: 'Compte', links: [['Se connecter', '/profil'], ['Créer un compte', '/profil'], ['Mon espace', '/dashboard'], ['Tarifs', '/tarifs'], ['FAQ', '/profil#faq']] },
 ]
 
 export default function Footer() {

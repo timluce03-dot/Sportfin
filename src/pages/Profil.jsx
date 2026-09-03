@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getPlans } from '../services/plansService'
+import { getFaq } from '../services/faqService'
 
 function usePlans() {
   const [plans, setPlans] = useState([])
@@ -10,6 +11,72 @@ function usePlans() {
     getPlans().then(({ data }) => { setPlans(data); setLoading(false) })
   }, [])
   return { plans, loading }
+}
+
+const FAQ_LIMIT = 10
+
+function FaqSection() {
+  const [items,    setItems]    = useState([])
+  const [showAll,  setShowAll]  = useState(false)
+  const [openIdx,  setOpenIdx]  = useState(null)
+
+  useEffect(() => { getFaq().then(({ data }) => setItems(data)) }, [])
+
+  const visible = showAll ? items : items.slice(0, FAQ_LIMIT)
+
+  if (items.length === 0) return null
+
+  return (
+    <section id="faq" className="max-w-[760px] mx-auto mt-16 mb-6">
+      <div className="text-center mb-10">
+        <span className="eyebrow">Questions fréquentes</span>
+        <h2 className="section-title">Tout ce que vous devez savoir</h2>
+      </div>
+      <div className="space-y-2.5">
+        {visible.map((item, i) => (
+          <div key={item.id}
+            className="rounded-2xl border overflow-hidden transition-all"
+            style={{ borderColor: openIdx === i ? 'var(--sf-primary)' : 'var(--sf-border)', background: 'var(--sf-surface)' }}>
+            <button
+              onClick={() => setOpenIdx(openIdx === i ? null : i)}
+              className="w-full flex items-center justify-between px-5 py-4 text-left gap-4"
+            >
+              <span className="font-semibold text-[14px] leading-snug" style={{ color: 'var(--sf-text)' }}>
+                {item.question}
+              </span>
+              <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[13px] font-bold transition-transform"
+                style={{
+                  background: openIdx === i ? 'var(--sf-primary)' : 'var(--sf-border)',
+                  color: openIdx === i ? '#fff' : 'var(--sf-muted)',
+                  transform: openIdx === i ? 'rotate(45deg)' : 'rotate(0deg)',
+                }}>
+                +
+              </span>
+            </button>
+            {openIdx === i && (
+              <div className="px-5 pb-5 border-t" style={{ borderColor: 'var(--sf-border)' }}>
+                <p className="text-[13.5px] leading-relaxed pt-3" style={{ color: 'var(--sf-muted)' }}>
+                  {item.answer}
+                </p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {!showAll && items.length > FAQ_LIMIT && (
+        <div className="text-center mt-6">
+          <button
+            onClick={() => setShowAll(true)}
+            className="text-[13px] font-semibold px-6 py-2.5 rounded-xl border transition-colors"
+            style={{ borderColor: 'var(--sf-border)', color: 'var(--sf-primary)' }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--sf-surface)')}
+            onMouseLeave={e => (e.currentTarget.style.background = '')}>
+            Voir plus ({items.length - FAQ_LIMIT} questions) ↓
+          </button>
+        </div>
+      )}
+    </section>
+  )
 }
 
 const VALUE_PROPS = [
@@ -361,6 +428,9 @@ export default function Profil() {
             </div>
           </>
         )}
+
+        {/* ── FAQ ── */}
+        <FaqSection />
       </div>
     </div>
   )

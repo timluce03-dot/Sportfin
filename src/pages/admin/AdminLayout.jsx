@@ -34,7 +34,8 @@ const NAV_SECTIONS = [
   {
     label: 'Offres',
     links: [
-      { to: '/admin/pricing',       label: 'Tarifs',       icon: '💎' },
+      { to: '/admin/pricing',       label: 'Tarifs',        icon: '💎' },
+      { to: '/admin/faq',           label: 'FAQ',           icon: '❓' },
       { to: '/admin/certification', label: 'Certification', icon: '🏅' },
     ],
   },
