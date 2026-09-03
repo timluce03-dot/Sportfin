@@ -9,7 +9,41 @@ const CONTRACT_STYLE = {
   Interim:{ bg: 'rgba(139,92,246,.1)', color: '#5b21b6' },
 }
 
-const CONTRACTS = ['Tous', 'CDI', 'CDD', 'Stage', 'Interim']
+const CONTRACTS  = ['Tous', 'CDI', 'CDD', 'Stage', 'Interim']
+const PAGE_SIZE  = 20
+
+function Pagination({ page, total, onPage }) {
+  const pages = Math.ceil(total / PAGE_SIZE)
+  if (pages <= 1) return null
+  const nums = Array.from({ length: pages }, (_, i) => i + 1)
+  return (
+    <div className="flex items-center justify-center gap-2 mt-10 flex-wrap">
+      <button
+        onClick={() => onPage(page - 1)} disabled={page === 1}
+        className="px-3 py-2 rounded-xl text-[13px] font-semibold transition-colors disabled:opacity-30"
+        style={{ background: 'var(--sf-surface)', border: '1px solid var(--sf-border)', color: 'var(--sf-primary)' }}>
+        ← Précédent
+      </button>
+      <div className="flex items-center gap-1.5">
+        {nums.map(p => (
+          <button key={p} onClick={() => onPage(p)}
+            className="w-9 h-9 rounded-xl text-[13px] font-bold transition-all"
+            style={p === page
+              ? { background: 'var(--sf-primary)', color: '#fff' }
+              : { background: 'var(--sf-surface)', border: '1px solid var(--sf-border)', color: 'var(--sf-muted)' }}>
+            {p}
+          </button>
+        ))}
+      </div>
+      <button
+        onClick={() => onPage(page + 1)} disabled={page === pages}
+        className="px-3 py-2 rounded-xl text-[13px] font-semibold transition-colors disabled:opacity-30"
+        style={{ background: 'var(--sf-surface)', border: '1px solid var(--sf-border)', color: 'var(--sf-primary)' }}>
+        Suivant →
+      </button>
+    </div>
+  )
+}
 
 function JobCard({ job }) {
   const badge = CONTRACT_STYLE[job.contract] || { bg: 'rgba(0,0,0,.06)', color: 'var(--sf-muted)' }
@@ -56,6 +90,7 @@ export default function CareerCenter() {
   const [contract, setContract] = useState('Tous')
   const [location, setLocation] = useState('Toutes villes')
   const [search,   setSearch]   = useState('')
+  const [page,     setPage]     = useState(1)
 
   function load() {
     setLoading(true); setError(null)
@@ -76,6 +111,17 @@ export default function CareerCenter() {
   )
 
   const hasFilters = domain !== 'Tous' || contract !== 'Tous' || location !== 'Toutes villes' || search
+
+  /* Reset to page 1 when filters change */
+  useEffect(() => { setPage(1) }, [domain, contract, location, search])
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  function goToPage(p) {
+    setPage(p)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   return (
     <div className="pt-[64px]">
@@ -149,10 +195,15 @@ export default function CareerCenter() {
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between mb-7">
+            <div className="flex items-center justify-between mb-7 flex-wrap gap-2">
               <p className="text-[13.5px] font-medium" style={{ color: 'var(--sf-muted)' }}>
                 <span className="font-bold text-[15px]" style={{ color: 'var(--sf-primary)' }}>{filtered.length}</span>
                 {' '}offre{filtered.length !== 1 ? 's' : ''} disponible{filtered.length !== 1 ? 's' : ''}
+                {totalPages > 1 && (
+                  <span className="ml-2 text-[12px]" style={{ color: 'var(--sf-muted)' }}>
+                    — page <strong style={{ color: 'var(--sf-primary)' }}>{page}</strong> sur <strong>{totalPages}</strong>
+                  </span>
+                )}
               </p>
               <span className="badge badge-muted text-[11px]">Mis à jour régulièrement</span>
             </div>
@@ -168,9 +219,12 @@ export default function CareerCenter() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-12">
-                {filtered.map(job => <JobCard key={job.id} job={job} />)}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {paginated.map(job => <JobCard key={job.id} job={job} />)}
+                </div>
+                <Pagination page={page} total={filtered.length} onPage={goToPage} />
+              </>
             )}
           </>
         )}
