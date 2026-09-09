@@ -441,12 +441,30 @@ function CourseItem({ course, idx, exercises }) {
       {open && (
         <div className="border-t" style={{ borderColor: 'var(--sf-border)' }}>
           {course.pdf_url ? (
-            <iframe
-              src={/\.pptx?/i.test(course.pdf_url)
-                ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(course.pdf_url)}`
-                : course.pdf_url}
-              title={course.title}
-              className="w-full block" style={{ height: 620, border: 'none' }} />
+            <div className="relative group">
+              <div className="absolute top-3 right-3 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <a href={/\.pptx?/i.test(course.pdf_url)
+                    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(course.pdf_url)}`
+                    : course.pdf_url}
+                  target="_blank" rel="noopener noreferrer"
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-md"
+                  style={{ background: 'var(--sf-primary)', color: '#fff' }}>
+                  ↗ Nouvel onglet
+                </a>
+                <button
+                  onClick={e => { const iframe = e.currentTarget.closest('.relative').querySelector('iframe'); iframe?.requestFullscreen?.() }}
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-md"
+                  style={{ background: 'rgba(0,0,0,.75)', color: '#fff' }}>
+                  ⛶ Plein écran
+                </button>
+              </div>
+              <iframe
+                src={/\.pptx?/i.test(course.pdf_url)
+                  ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(course.pdf_url)}`
+                  : course.pdf_url}
+                title={course.title}
+                className="w-full block" style={{ height: 680, border: 'none' }} />
+            </div>
           ) : (
             <div className="px-4 py-6 text-center text-[13px]" style={{ color: 'var(--sf-muted)' }}>
               Aucun contenu disponible pour ce cours.
@@ -606,11 +624,19 @@ function FicheCard({ f }) {
         <div className="border-t" style={{ borderColor: c.border }}>
           <div className="flex items-center justify-between px-5 py-2.5 bg-white/40">
             <span className="text-[12px] font-semibold" style={{ color: c.color }}>Fiche PDF</span>
-            <a href={f.pdf_url} target="_blank" rel="noopener noreferrer"
-              className="text-[11.5px] font-bold px-3 py-1 rounded-lg transition-colors"
-              style={{ background: c.tag, color: c.color }}>
-              ↗ Ouvrir dans un nouvel onglet
-            </a>
+            <div className="flex gap-2">
+              <button
+                onClick={e => { const iframe = e.currentTarget.closest('.border-t').querySelector('iframe'); iframe?.requestFullscreen?.() }}
+                className="text-[11px] font-bold px-3 py-1 rounded-lg"
+                style={{ background: 'rgba(0,0,0,.12)', color: c.color }}>
+                ⛶ Plein écran
+              </button>
+              <a href={f.pdf_url} target="_blank" rel="noopener noreferrer"
+                className="text-[11.5px] font-bold px-3 py-1 rounded-lg"
+                style={{ background: c.tag, color: c.color }}>
+                ↗ Nouvel onglet
+              </a>
+            </div>
           </div>
           <iframe
             src={f.pdf_url}

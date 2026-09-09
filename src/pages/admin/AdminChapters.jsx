@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 
@@ -20,9 +20,11 @@ export default function AdminChapters() {
   const [form, setForm] = useState(EMPTY)
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saveErr, setSaveErr] = useState(null)
+  const [saving,    setSaving]    = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [saveErr,   setSaveErr]   = useState(null)
   const [filterCourse, setFilterCourse] = useState('')
+  const fileRef = useRef()
 
   async function load() {
     const [{ data: ch }, { data: co }] = await Promise.all([
@@ -58,6 +60,18 @@ export default function AdminChapters() {
   async function remove(id) {
     if (!confirm('Supprimer ce chapitre ?')) return
     await supabase.from('chapters').delete().eq('id', id); load()
+  }
+
+  async function handlePdfUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true); setSaveErr(null)
+    const path = `chapters/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
+    const { error } = await supabase.storage.from('sportfin').upload(path, file, { upsert: true })
+    if (error) { setSaveErr(`Upload échoué : ${error.message}`); setUploading(false); return }
+    const { data: { publicUrl } } = supabase.storage.from('sportfin').getPublicUrl(path)
+    setForm(f => ({ ...f, pdf_url: publicUrl }))
+    setUploading(false)
   }
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
@@ -99,8 +113,33 @@ export default function AdminChapters() {
               </select></div>
             <div><label className="block text-xs font-semibold text-gray-600 mb-1">Durée</label>
               <input className="form-control" placeholder="ex: 15 min" value={form.duration} onChange={set('duration')} /></div>
-            <div className="md:col-span-2"><label className="block text-xs font-semibold text-gray-600 mb-1">URL du PDF</label>
-              <input className="form-control" placeholder="https://... (lien vers le fichier PDF)" value={form.pdf_url} onChange={set('pdf_url')} /></div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-semibold text-gray-600 mb-2">Fichier PDF / support de cours</label>
+              <div className={`rounded-xl border-2 border-dashed p-4 text-center transition-colors ${form.pdf_url ? 'border-emerald-300 bg-emerald-50' : 'border-gray-200 bg-gray-50 hover:border-blue-300'}`}>
+                {form.pdf_url ? (
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">✅</span>
+                      <div className="text-left">
+                        <p className="text-sm font-semibold text-emerald-700">Fichier uploadé</p>
+                        <a href={form.pdf_url} target="_blank" rel="noopener noreferrer" className="text-[11px] text-emerald-600 hover:underline">Aperçu →</a>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => { setForm(f => ({ ...f, pdf_url: '' })); if (fileRef.current) fileRef.current.value = '' }}
+                      className="text-xs text-red-500 hover:text-red-700 font-medium">Changer</button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-1">{uploading ? '⏳ Upload en cours…' : 'PDF, PPT, PPTX…'}</p>
+                    <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                      className="btn-primary text-xs px-4 py-1.5 mt-1 disabled:opacity-60">
+                      {uploading ? 'Upload…' : 'Choisir un fichier'}
+                    </button>
+                  </div>
+                )}
+                <input ref={fileRef} type="file" accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" className="hidden" onChange={handlePdfUpload} />
+              </div>
+            </div>
             <div className="md:col-span-2"><label className="block text-xs font-semibold text-gray-600 mb-1">Contenu (texte)</label>
               <textarea className="form-control min-h-[100px]" value={form.content} onChange={set('content')} /></div>
             <div><label className="flex items-center gap-2 cursor-pointer">

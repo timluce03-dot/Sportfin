@@ -5,7 +5,7 @@ const timeout = ms => new Promise((_, rej) => setTimeout(() => rej(new Error('ti
 export async function getJobs() {
   try {
     const { data, error } = await Promise.race([
-      supabase.from('jobs').select('*').eq('published', true).order('created_at', { ascending: false }),
+      supabase.from('jobs').select('*').eq('published', true).order('created_at', { ascending: false }).range(0, 4999),
       timeout(5000),
     ])
     if (error) return { data: [], error: error.message }
