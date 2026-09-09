@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { getCoursesByModule } from '../services/coursesService'
 import { getExercises, getExerciseQuestions, saveExerciseResult } from '../services/exercisesService'
 import { saveAttempt } from '../services/progressService'
+import { getFiches } from '../services/fichesService'
 import StudentDashboard from '../components/StudentDashboard'
 import PartnersScrollBanner from '../components/PartnersScrollBanner'
 
@@ -561,6 +562,131 @@ function EmptyState({ icon, title, subtitle }) {
   )
 }
 
+/* ─── Fiches de révision ──────────────────────────────────────── */
+const COLOR_MAP = {
+  blue:   { bg: 'rgba(11,37,69,.06)',    border: 'rgba(11,37,69,.15)',    color: '#0B2545', tag: 'rgba(11,37,69,.08)' },
+  gold:   { bg: 'rgba(201,168,76,.07)',  border: 'rgba(201,168,76,.25)', color: '#7a5c1e', tag: 'rgba(201,168,76,.12)' },
+  green:  { bg: 'rgba(16,185,129,.06)',  border: 'rgba(16,185,129,.2)',  color: '#065f46', tag: 'rgba(16,185,129,.1)' },
+  purple: { bg: 'rgba(139,92,246,.06)',  border: 'rgba(139,92,246,.2)',  color: '#5b21b6', tag: 'rgba(139,92,246,.1)' },
+  red:    { bg: 'rgba(239,68,68,.06)',   border: 'rgba(239,68,68,.18)',  color: '#991b1b', tag: 'rgba(239,68,68,.08)' },
+  gray:   { bg: 'rgba(107,114,128,.06)', border: 'rgba(107,114,128,.18)', color: '#374151', tag: 'rgba(107,114,128,.1)' },
+}
+
+function renderContent(text) {
+  if (!text) return null
+  return text.split('\n').map((line, i) => {
+    if (line.startsWith('# ')) {
+      return <h3 key={i} className="font-bold text-[13.5px] mt-4 mb-1.5 first:mt-0" style={{ color: 'var(--sf-primary)' }}>{line.slice(2)}</h3>
+    }
+    if (line.startsWith('- ')) {
+      const content = line.slice(2).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      return <li key={i} className="text-[12.5px] leading-relaxed ml-3 list-disc" style={{ color: 'var(--sf-muted)' }} dangerouslySetInnerHTML={{ __html: content }} />
+    }
+    if (line.trim() === '') return <div key={i} className="h-1.5" />
+    const content = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    return <p key={i} className="text-[12.5px] leading-relaxed" style={{ color: 'var(--sf-muted)' }} dangerouslySetInnerHTML={{ __html: content }} />
+  })
+}
+
+function FicheCard({ f }) {
+  const [open, setOpen] = useState(false)
+  const c = COLOR_MAP[f.color] || COLOR_MAP.blue
+  return (
+    <div className="rounded-2xl overflow-hidden transition-all"
+      style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full text-left px-5 py-4 flex items-start gap-3 hover:brightness-95 transition-all">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[22px] flex-shrink-0"
+          style={{ background: `rgba(255,255,255,.6)`, border: `1px solid ${c.border}` }}>
+          {f.emoji || '📄'}
+        </div>
+        <div className="flex-1 min-w-0 text-left">
+          <div className="flex flex-wrap items-center gap-2 mb-0.5">
+            <span className="font-bold text-[13.5px]" style={{ color: c.color }}>{f.title}</span>
+            {f.difficulty && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: c.tag, color: c.color }}>{f.difficulty}</span>
+            )}
+            {f.category && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: 'rgba(0,0,0,.05)', color: 'var(--sf-muted)' }}>{f.category}</span>
+            )}
+          </div>
+          {f.subtitle && <p className="text-[12px]" style={{ color: c.color, opacity: .7 }}>{f.subtitle}</p>}
+        </div>
+        <span className="text-[18px] flex-shrink-0 mt-0.5 transition-transform" style={{ color: c.color, transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+          ›
+        </span>
+      </button>
+      {open && (
+        <div className="px-5 pb-5 border-t" style={{ borderColor: c.border }}>
+          <div className="pt-4 space-y-0.5">
+            {renderContent(f.content)}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function FichesSection({ fiches, loading }) {
+  const [search, setSearch] = useState('')
+  const [catFilter, setCatFilter] = useState('Toutes')
+
+  const categories = ['Toutes', ...Array.from(new Set(fiches.map(f => f.category).filter(Boolean))).sort()]
+  const filtered = fiches.filter(f =>
+    (catFilter === 'Toutes' || f.category === catFilter) &&
+    (!search || f.title.toLowerCase().includes(search.toLowerCase()) || f.subtitle?.toLowerCase().includes(search.toLowerCase()))
+  )
+
+  return (
+    <div className="max-w-[860px]">
+      <div className="mb-6">
+        <h2 className="font-serif font-extrabold text-[22px] mb-1" style={{ color: 'var(--sf-primary)' }}>📋 Fiches de révision</h2>
+        <p className="text-[13px]" style={{ color: 'var(--sf-muted)' }}>Synthèses clés du programme — cliquez sur une fiche pour la dérouler.</p>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 mb-5">
+        <div className="relative flex-1 min-w-[180px]">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px]" style={{ color: 'var(--sf-muted)' }}>🔍</span>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher une fiche…"
+            className="w-full pl-8 pr-4 py-2.5 rounded-xl text-[13px] focus:outline-none"
+            style={{ background: 'var(--sf-surface)', border: '1px solid var(--sf-border)', color: 'var(--sf-text)' }} />
+        </div>
+        {categories.length > 1 && (
+          <div className="flex gap-1.5 flex-wrap">
+            {categories.map(cat => (
+              <button key={cat} onClick={() => setCatFilter(cat)}
+                className="px-3.5 py-2 rounded-xl text-[12px] font-semibold transition-colors"
+                style={catFilter === cat
+                  ? { background: 'var(--sf-primary)', color: '#fff' }
+                  : { background: 'var(--sf-surface)', border: '1px solid var(--sf-border)', color: 'var(--sf-muted)' }}>
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col gap-3">{[1,2,3].map(i => <div key={i} className="h-16 skeleton rounded-2xl" />)}</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-16" style={{ color: 'var(--sf-muted)' }}>
+          <div className="text-4xl mb-3">📋</div>
+          <p className="font-semibold">{fiches.length === 0 ? 'Les fiches arrivent bientôt' : 'Aucune fiche trouvée'}</p>
+          <p className="text-[13px] mt-1">{fiches.length === 0 ? 'Le contenu est en cours de préparation.' : 'Essayez un autre mot-clé ou catégorie.'}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {filtered.map(f => <FicheCard key={f.id} f={f} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /* ─── Main Page ───────────────────────────────────────────────── */
 export default function Courses() {
   const { user }                          = useAuth()
@@ -582,10 +708,21 @@ export default function Courses() {
 
   const totalCourses = modules.reduce((s, m) => s + m.courses.length, 0)
 
+  const [fiches, setFiches]         = useState([])
+  const [fichesLoading, setFichesLoading] = useState(false)
+
+  useEffect(() => {
+    if (tab === 'fiches' && fiches.length === 0 && !fichesLoading) {
+      setFichesLoading(true)
+      getFiches().then(({ data }) => { setFiches(data); setFichesLoading(false) })
+    }
+  }, [tab])
+
   const TABS = [
-    { id: 'programme', label: '📚 Programme',    count: null },
-    { id: 'exercices', label: '✏️ Exercices',    count: exercises.length > 0 ? exercises.length : null },
-    { id: 'dashboard', label: '📊 Mon Dashboard', count: null },
+    { id: 'programme', label: '📚 Programme',         count: null },
+    { id: 'exercices', label: '✏️ Exercices',         count: exercises.length > 0 ? exercises.length : null },
+    { id: 'fiches',    label: '📋 Fiches de révision', count: null },
+    { id: 'dashboard', label: '📊 Mon Dashboard',     count: null },
   ]
 
   return (
@@ -745,6 +882,11 @@ export default function Courses() {
               </div>
             )}
           </>
+        )}
+
+        {/* FICHES DE RÉVISION */}
+        {tab === 'fiches' && (
+          <FichesSection fiches={fiches} loading={fichesLoading} />
         )}
 
         {/* DASHBOARD */}

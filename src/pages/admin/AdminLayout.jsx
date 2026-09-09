@@ -15,6 +15,7 @@ const NAV_SECTIONS = [
       { to: '/admin/courses',   label: 'Modules',   icon: '📚' },
       { to: '/admin/chapters',  label: 'Cours',     icon: '📑' },
       { to: '/admin/exercises', label: 'Exercices', icon: '✏️' },
+      { to: '/admin/fiches',    label: 'Fiches',    icon: '📋' },
       { to: '/admin/quizzes',   label: 'Quiz',      icon: '🧠' },
       { to: '/admin/questions', label: 'Questions', icon: '❓' },
       { to: '/admin/articles',  label: 'Articles',  icon: '📰' },
