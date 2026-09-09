@@ -572,22 +572,6 @@ const COLOR_MAP = {
   gray:   { bg: 'rgba(107,114,128,.06)', border: 'rgba(107,114,128,.18)', color: '#374151', tag: 'rgba(107,114,128,.1)' },
 }
 
-function renderContent(text) {
-  if (!text) return null
-  return text.split('\n').map((line, i) => {
-    if (line.startsWith('# ')) {
-      return <h3 key={i} className="font-bold text-[13.5px] mt-4 mb-1.5 first:mt-0" style={{ color: 'var(--sf-primary)' }}>{line.slice(2)}</h3>
-    }
-    if (line.startsWith('- ')) {
-      const content = line.slice(2).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      return <li key={i} className="text-[12.5px] leading-relaxed ml-3 list-disc" style={{ color: 'var(--sf-muted)' }} dangerouslySetInnerHTML={{ __html: content }} />
-    }
-    if (line.trim() === '') return <div key={i} className="h-1.5" />
-    const content = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    return <p key={i} className="text-[12.5px] leading-relaxed" style={{ color: 'var(--sf-muted)' }} dangerouslySetInnerHTML={{ __html: content }} />
-  })
-}
-
 function FicheCard({ f }) {
   const [open, setOpen] = useState(false)
   const c = COLOR_MAP[f.color] || COLOR_MAP.blue
@@ -597,7 +581,7 @@ function FicheCard({ f }) {
       <button onClick={() => setOpen(o => !o)}
         className="w-full text-left px-5 py-4 flex items-start gap-3 hover:brightness-95 transition-all">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[22px] flex-shrink-0"
-          style={{ background: `rgba(255,255,255,.6)`, border: `1px solid ${c.border}` }}>
+          style={{ background: 'rgba(255,255,255,.6)', border: `1px solid ${c.border}` }}>
           {f.emoji || '📄'}
         </div>
         <div className="flex-1 min-w-0 text-left">
@@ -614,15 +598,26 @@ function FicheCard({ f }) {
           </div>
           {f.subtitle && <p className="text-[12px]" style={{ color: c.color, opacity: .7 }}>{f.subtitle}</p>}
         </div>
-        <span className="text-[18px] flex-shrink-0 mt-0.5 transition-transform" style={{ color: c.color, transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-          ›
-        </span>
+        <span className="text-[20px] flex-shrink-0 mt-0.5 transition-transform duration-200"
+          style={{ color: c.color, transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>›</span>
       </button>
-      {open && (
-        <div className="px-5 pb-5 border-t" style={{ borderColor: c.border }}>
-          <div className="pt-4 space-y-0.5">
-            {renderContent(f.content)}
+
+      {open && f.pdf_url && (
+        <div className="border-t" style={{ borderColor: c.border }}>
+          <div className="flex items-center justify-between px-5 py-2.5 bg-white/40">
+            <span className="text-[12px] font-semibold" style={{ color: c.color }}>Fiche PDF</span>
+            <a href={f.pdf_url} target="_blank" rel="noopener noreferrer"
+              className="text-[11.5px] font-bold px-3 py-1 rounded-lg transition-colors"
+              style={{ background: c.tag, color: c.color }}>
+              ↗ Ouvrir dans un nouvel onglet
+            </a>
           </div>
+          <iframe
+            src={f.pdf_url}
+            title={f.title}
+            className="w-full"
+            style={{ height: '75vh', border: 'none', display: 'block' }}
+          />
         </div>
       )}
     </div>
