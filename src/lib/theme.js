@@ -19,6 +19,7 @@ export const DEFAULT_THEME = {
   buttonStyle: 'plein',  // plein | contour | minimal
   logo: null,
   heroImage: null,
+  featureIcons: {},
   sections: {
     showFeatures: true,
     showArticles: true,

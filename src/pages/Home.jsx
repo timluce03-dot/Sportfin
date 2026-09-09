@@ -127,9 +127,11 @@ export default function Home() {
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--sf-bg)' }}
               onMouseLeave={e => { e.currentTarget.style.background = '' }}
             >
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[17px] mb-2 transition-transform group-hover:scale-110"
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[17px] mb-2 transition-transform group-hover:scale-110 overflow-hidden"
                 style={{ background: 'var(--sf-bg)', border: '1px solid var(--sf-border)' }}>
-                {f.icon}
+                {theme.featureIcons?.[f.label]
+                  ? <img src={theme.featureIcons[f.label]} alt={f.label} className="w-full h-full object-cover" />
+                  : f.icon}
               </div>
               <div className="text-[10.5px] font-semibold leading-snug mb-0.5" style={{ color: 'var(--sf-text)' }}>{f.label}</div>
               <div className="text-[9.5px] leading-snug hidden lg:block" style={{ color: 'var(--sf-muted)' }}>{f.desc}</div>

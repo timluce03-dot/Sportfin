@@ -1,5 +1,17 @@
 import { useRef, useState } from 'react'
 import { useTheme } from '../../contexts/ThemeContext'
+import { supabase } from '../../lib/supabase'
+
+const FEATURES = [
+  { key: 'Cours & Exercices',    emoji: '📚', desc: 'Finance, stratégie, droits TV' },
+  { key: 'Quiz gamifiés',         emoji: '🧠', desc: 'Classements, XP, badges' },
+  { key: 'Podcasts & Interviews', emoji: '🎙️', desc: 'Pros du secteur en exclusivité' },
+  { key: 'Career Center',         emoji: '💼', desc: 'Offres sport business triées' },
+  { key: 'Certification',         emoji: '🏅', desc: 'Badge LinkedIn officiel SBM' },
+  { key: 'Articles & Actualité',  emoji: '📄', desc: 'Économie du sport décryptée' },
+  { key: 'Cas pratiques',         emoji: '✏️', desc: 'Exercices corrigés par experts' },
+  { key: 'Fiches de révision',    emoji: '📊', desc: 'Condensés clés en main' },
+]
 
 const CARD_STYLES   = ['sobre', 'premium', 'compact']
 const BUTTON_STYLES = ['plein', 'contour', 'minimal']
@@ -60,8 +72,41 @@ function Toggle({ checked, onChange }) {
 
 export default function AdminDesign() {
   const { theme, setTheme, resetTheme } = useTheme()
-  const [saved, setSaved] = useState(false)
-  const statusTimer = useRef(null)
+  const [saved,      setSaved]      = useState(false)
+  const [uploading,  setUploading]  = useState({})
+  const statusTimer  = useRef(null)
+  const logoRef      = useRef()
+  const iconRefs     = useRef({})
+
+  async function uploadMedia(file, folder) {
+    const path = `${folder}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`
+    const { error } = await supabase.storage.from('sportfin').upload(path, file, { upsert: true })
+    if (error) { alert(`Upload échoué : ${error.message}`); return null }
+    const { data: { publicUrl } } = supabase.storage.from('sportfin').getPublicUrl(path)
+    return publicUrl
+  }
+
+  async function handleLogoUpload(e) {
+    const file = e.target.files?.[0]; if (!file) return
+    setUploading(u => ({ ...u, logo: true }))
+    const url = await uploadMedia(file, 'design/logo')
+    if (url) handleChange({ logo: url })
+    setUploading(u => ({ ...u, logo: false }))
+  }
+
+  async function handleIconUpload(featureKey, e) {
+    const file = e.target.files?.[0]; if (!file) return
+    setUploading(u => ({ ...u, [featureKey]: true }))
+    const url = await uploadMedia(file, 'design/icons')
+    if (url) handleChange({ featureIcons: { ...(theme.featureIcons || {}), [featureKey]: url } })
+    setUploading(u => ({ ...u, [featureKey]: false }))
+  }
+
+  function removeIcon(featureKey) {
+    const next = { ...(theme.featureIcons || {}) }
+    delete next[featureKey]
+    handleChange({ featureIcons: next })
+  }
 
   function handleChange(patch) {
     setTheme(patch)
@@ -218,11 +263,28 @@ export default function AdminDesign() {
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <h2 className="font-bold text-gray-900 mb-4">Médias</h2>
             <div className="space-y-4">
+              {/* Logo upload */}
               <div>
-                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 block">URL du logo</label>
-                <input type="url" value={theme.logo || ''} placeholder="https://…"
-                  onChange={e => handleChange({ logo: e.target.value || null })}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none" />
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Logo de la plateforme</label>
+                <div className="flex items-center gap-3">
+                  {theme.logo && (
+                    <img src={theme.logo} alt="Logo" className="h-10 w-auto rounded-lg object-contain border border-gray-200 bg-gray-50 px-1" />
+                  )}
+                  <div className="flex gap-2 flex-wrap">
+                    <button type="button" onClick={() => logoRef.current?.click()}
+                      disabled={uploading.logo}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-50">
+                      {uploading.logo ? '⏳ Upload…' : theme.logo ? '🔄 Changer' : '📤 Uploader une image'}
+                    </button>
+                    {theme.logo && (
+                      <button type="button" onClick={() => handleChange({ logo: null })}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-red-200 text-red-500 hover:bg-red-50">
+                        Supprimer
+                      </button>
+                    )}
+                  </div>
+                  <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                </div>
               </div>
               <div>
                 <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Image hero (overlay)</label>
@@ -230,6 +292,53 @@ export default function AdminDesign() {
                   onChange={e => handleChange({ heroImage: e.target.value || null })}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none" />
               </div>
+            </div>
+          </div>
+
+          {/* Icônes de la plateforme */}
+          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <h2 className="font-bold text-gray-900 mb-1">Icônes de la plateforme</h2>
+            <p className="text-xs text-gray-400 mb-5">
+              Remplacez les emojis par des images personnalisées (PNG, SVG, JPG…) — visibles sur la page d'accueil dans la bande "Ce que SportFin vous apporte".
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {FEATURES.map(f => {
+                const imgUrl = theme.featureIcons?.[f.key]
+                const isUploading = uploading[f.key]
+                return (
+                  <div key={f.key} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50">
+                    {/* Aperçu actuel */}
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+                      style={{ background: '#f0f2f7', border: '1px solid #e8eaed' }}>
+                      {imgUrl
+                        ? <img src={imgUrl} alt={f.key} className="w-full h-full object-cover" />
+                        : <span className="text-[20px]">{f.emoji}</span>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12px] font-semibold text-gray-800 truncate">{f.key}</div>
+                      <div className="text-[10.5px] text-gray-400 truncate">{f.desc}</div>
+                    </div>
+                    <div className="flex gap-1.5 flex-shrink-0">
+                      <button type="button"
+                        onClick={() => { iconRefs.current[f.key]?.click() }}
+                        disabled={isUploading}
+                        className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-gray-200 hover:bg-white disabled:opacity-50 transition-colors">
+                        {isUploading ? '⏳' : imgUrl ? '🔄' : '📤'}
+                      </button>
+                      {imgUrl && (
+                        <button type="button" onClick={() => removeIcon(f.key)}
+                          className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 transition-colors">
+                          ✕
+                        </button>
+                      )}
+                      <input
+                        ref={el => { iconRefs.current[f.key] = el }}
+                        type="file" accept="image/*" className="hidden"
+                        onChange={e => handleIconUpload(f.key, e)} />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
 
