@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { getPlans } from '../services/plansService'
 import { getFaq } from '../services/faqService'
+import { useTheme } from '../contexts/ThemeContext'
 
 function usePlans() {
   const [plans, setPlans] = useState([])
@@ -11,6 +12,67 @@ function usePlans() {
     getPlans().then(({ data }) => { setPlans(data); setLoading(false) })
   }, [])
   return { plans, loading }
+}
+
+const FEATURES = [
+  { key: 'Cours & Exercices',    emoji: '📚', desc: 'Finance, stratégie, droits TV' },
+  { key: 'Quiz gamifiés',         emoji: '🧠', desc: 'Classements, XP, badges' },
+  { key: 'Podcasts & Interviews', emoji: '🎙️', desc: 'Pros du secteur en exclusivité' },
+  { key: 'Career Center',         emoji: '💼', desc: 'Offres sport business triées' },
+  { key: 'Certification',         emoji: '🏅', desc: 'Badge LinkedIn officiel SBM' },
+  { key: 'Articles & Actualité',  emoji: '📄', desc: 'Économie du sport décryptée' },
+  { key: 'Cas pratiques',         emoji: '✏️', desc: 'Exercices corrigés par experts' },
+  { key: 'Fiches de révision',    emoji: '📊', desc: 'Condensés clés en main' },
+]
+
+const FALLBACK_GRADIENTS = [
+  'linear-gradient(135deg,#0B2545,#1B4F8A)',
+  'linear-gradient(135deg,#7a5c1e,#C9A84C)',
+  'linear-gradient(135deg,#065f46,#10b981)',
+  'linear-gradient(135deg,#5b21b6,#8b5cf6)',
+  'linear-gradient(135deg,#991b1b,#ef4444)',
+  'linear-gradient(135deg,#1e3a5f,#3b82f6)',
+  'linear-gradient(135deg,#374151,#9ca3af)',
+  'linear-gradient(135deg,#0B2545,#C9A84C)',
+]
+const CARD_GRADIENT = 'linear-gradient(to top, rgba(7,26,50,.85) 0%, rgba(7,26,50,.4) 55%, rgba(7,26,50,.05) 100%)'
+
+function SportfinFeatures() {
+  const { theme } = useTheme()
+  const featureIcons = theme.featureIcons || {}
+  return (
+    <div className="mt-10 mb-2">
+      <div className="mb-4">
+        <h2 className="font-serif font-extrabold text-[20px] mb-1" style={{ color: 'var(--sf-primary)' }}>Tout ce que SportFin vous apporte</h2>
+        <p className="text-[13px]" style={{ color: 'var(--sf-muted)' }}>Une plateforme complète pour maîtriser le sport business.</p>
+      </div>
+      <div style={{ background: 'linear-gradient(160deg, #1a4a8a 0%, #0B2545 40%, #0d3060 70%, #1B4F8A 100%)', borderRadius: 16 }} className="p-5">
+        <div className="flex gap-3 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {FEATURES.map((f, i) => {
+            const imgUrl = featureIcons[f.key]
+            return (
+              <div key={f.key}
+                className="flex-shrink-0 relative rounded-xl overflow-hidden cursor-default group"
+                style={{ width: 150, height: 150 }}>
+                {imgUrl
+                  ? <img src={imgUrl} alt={f.key} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  : <div className="absolute inset-0" style={{ background: FALLBACK_GRADIENTS[i % FALLBACK_GRADIENTS.length] }} />
+                }
+                <div className="absolute inset-0" style={{ background: CARD_GRADIENT }} />
+                {!imgUrl && (
+                  <div className="absolute top-3 left-3 text-[28px] drop-shadow-md transition-transform duration-300 group-hover:scale-110">{f.emoji}</div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <div className="font-bold text-[12px] leading-snug text-white mb-0.5" style={{ textShadow: '0 1px 4px rgba(0,0,0,.5)' }}>{f.key}</div>
+                  <div className="text-[10px] leading-snug text-white/65">{f.desc}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 const FAQ_LIMIT = 10
@@ -428,6 +490,9 @@ export default function Profil() {
             </div>
           </>
         )}
+
+        {/* ── Ce que SportFin vous apporte ── */}
+        <SportfinFeatures />
 
         {/* ── FAQ ── */}
         <FaqSection />

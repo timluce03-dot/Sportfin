@@ -195,9 +195,7 @@ export default function Home() {
   const sectionOrder = (theme.sections?.order || ['hero', 'features', 'articles'])
     .filter(k => k !== 'hero')
 
-  const FeaturesSection = theme.sections?.showFeatures !== false ? (
-    <FeatureCarousel key="features" features={FEATURES} featureIcons={theme.featureIcons || {}} />
-  ) : null
+  const FeaturesSection = null
 
   const ArticlesSection = theme.sections?.showArticles !== false ? (
     <section key="articles" className="max-w-[1360px] mx-auto px-6 lg:px-10 py-12">
