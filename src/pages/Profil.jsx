@@ -57,6 +57,8 @@ function SportfinFeatures() {
         marginRight: 'calc(-50vw + 50%)',
         overflow: 'hidden',
         padding: '20px 0',
+        maskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%)',
       }}>
         <style>{`
           @keyframes sf-marquee {
@@ -77,7 +79,7 @@ function SportfinFeatures() {
             return (
               <div key={i}
                 className="flex-shrink-0 relative rounded-xl overflow-hidden group"
-                style={{ width: 150, height: 150 }}>
+                style={{ width: 195, height: 195 }}>
                 {imgUrl
                   ? <img src={imgUrl} alt={f.key} className="absolute inset-0 w-full h-full object-cover" />
                   : <div className="absolute inset-0" style={{ background: FALLBACK_GRADIENTS[i % FALLBACK_GRADIENTS.length] }} />
