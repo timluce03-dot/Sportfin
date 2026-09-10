@@ -122,67 +122,76 @@ function FeatureCarousel({ features, featureIcons }) {
   }
 
   return (
-    <section style={{ background: 'var(--sf-surface)', borderBottom: '1px solid var(--sf-border)' }}>
-      <div className="max-w-[1360px] mx-auto px-6 lg:px-10 py-8">
-        <p className="text-[9.5px] font-bold tracking-[.2em] uppercase mb-5" style={{ color: 'var(--sf-muted)' }}>
-          Tout ce que SPORTFIN vous apporte
-        </p>
-        <div className="relative">
-          {/* Left arrow */}
-          {canLeft && (
-            <button onClick={() => scroll(-1)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 w-9 h-9 rounded-full shadow-lg flex items-center justify-center text-[15px] font-bold transition-all hover:scale-110"
-              style={{ background: 'var(--sf-primary)', color: '#fff' }}>
-              ‹
-            </button>
-          )}
+    <section>
+      {/* Bande titre */}
+      <div style={{ background: 'var(--sf-surface)', borderBottom: '1px solid var(--sf-border)' }}>
+        <div className="max-w-[1360px] mx-auto px-6 lg:px-10 py-3">
+          <p className="text-[9.5px] font-bold tracking-[.2em] uppercase" style={{ color: 'var(--sf-muted)' }}>
+            Tout ce que SPORTFIN vous apporte
+          </p>
+        </div>
+      </div>
 
-          {/* Scrollable track */}
-          <div
-            ref={trackRef}
-            onScroll={updateArrows}
-            className="flex gap-4 overflow-x-auto pb-1"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
-            {features.map((f, i) => {
-              const imgUrl = featureIcons[f.label]
-              return (
-                <div key={f.label}
-                  className="flex-shrink-0 relative rounded-2xl overflow-hidden cursor-default group"
-                  style={{ width: 200, height: 260 }}>
-                  {/* Background */}
-                  {imgUrl
-                    ? <img src={imgUrl} alt={f.label} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                    : <div className="absolute inset-0" style={{ background: FALLBACK_GRADIENTS[i % FALLBACK_GRADIENTS.length] }} />
-                  }
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0" style={{ background: CARD_GRADIENT }} />
-                  {/* Emoji (quand pas d'image) */}
-                  {!imgUrl && (
-                    <div className="absolute top-5 left-5 text-[36px] drop-shadow-md transition-transform duration-300 group-hover:scale-110">
-                      {f.icon}
+      {/* Zone sombre avec carrousel */}
+      <div style={{ background: 'linear-gradient(135deg, #071a32 0%, #0B2545 60%, #122d55 100%)', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+        <div className="max-w-[1360px] mx-auto px-6 lg:px-10 py-6">
+          <div className="relative">
+            {/* Left arrow */}
+            {canLeft && (
+              <button onClick={() => scroll(-1)}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-8 h-8 rounded-full shadow-lg flex items-center justify-center text-[16px] font-bold transition-all hover:scale-110"
+                style={{ background: 'rgba(201,168,76,.9)', color: '#071a32' }}>
+                ‹
+              </button>
+            )}
+
+            {/* Scrollable track */}
+            <div
+              ref={trackRef}
+              onScroll={updateArrows}
+              className="flex gap-3 overflow-x-auto"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+              {features.map((f, i) => {
+                const imgUrl = featureIcons[f.label]
+                return (
+                  <div key={f.label}
+                    className="flex-shrink-0 relative rounded-xl overflow-hidden cursor-default group"
+                    style={{ width: 150, height: 150 }}>
+                    {/* Background */}
+                    {imgUrl
+                      ? <img src={imgUrl} alt={f.label} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      : <div className="absolute inset-0" style={{ background: FALLBACK_GRADIENTS[i % FALLBACK_GRADIENTS.length] }} />
+                    }
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0" style={{ background: CARD_GRADIENT }} />
+                    {/* Emoji (quand pas d'image) */}
+                    {!imgUrl && (
+                      <div className="absolute top-3 left-3 text-[28px] drop-shadow-md transition-transform duration-300 group-hover:scale-110">
+                        {f.icon}
+                      </div>
+                    )}
+                    {/* Text overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <div className="font-bold text-[12px] leading-snug text-white mb-0.5"
+                        style={{ fontFamily: 'var(--sf-font-heading)', textShadow: '0 1px 4px rgba(0,0,0,.5)' }}>
+                        {f.label}
+                      </div>
+                      <div className="text-[10px] leading-snug text-white/65">{f.desc}</div>
                     </div>
-                  )}
-                  {/* Text overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <div className="font-bold text-[13.5px] leading-snug text-white mb-1"
-                      style={{ fontFamily: 'var(--sf-font-heading)', textShadow: '0 1px 4px rgba(0,0,0,.4)' }}>
-                      {f.label}
-                    </div>
-                    <div className="text-[11px] leading-snug text-white/70">{f.desc}</div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
 
-          {/* Right arrow */}
-          {canRight && (
-            <button onClick={() => scroll(1)}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 w-9 h-9 rounded-full shadow-lg flex items-center justify-center text-[15px] font-bold transition-all hover:scale-110"
-              style={{ background: 'var(--sf-primary)', color: '#fff' }}>
-              ›
-            </button>
-          )}
+            {/* Right arrow */}
+            {canRight && (
+              <button onClick={() => scroll(1)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-8 h-8 rounded-full shadow-lg flex items-center justify-center text-[16px] font-bold transition-all hover:scale-110"
+                style={{ background: 'rgba(201,168,76,.9)', color: '#071a32' }}>
+                ›
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </section>
