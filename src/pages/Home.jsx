@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../contexts/ThemeContext'
 import { getArticles } from '../services/articlesService'
@@ -91,6 +91,104 @@ function Pagination({ page, total, perPage, onPage }) {
   )
 }
 
+/* ─── Feature Carousel ────────────────────────────────────────── */
+const CARD_GRADIENT = 'linear-gradient(to top, rgba(7,26,50,.85) 0%, rgba(7,26,50,.4) 55%, rgba(7,26,50,.05) 100%)'
+const FALLBACK_GRADIENTS = [
+  'linear-gradient(135deg,#0B2545,#1B4F8A)',
+  'linear-gradient(135deg,#7a5c1e,#C9A84C)',
+  'linear-gradient(135deg,#065f46,#10b981)',
+  'linear-gradient(135deg,#5b21b6,#8b5cf6)',
+  'linear-gradient(135deg,#991b1b,#ef4444)',
+  'linear-gradient(135deg,#1e3a5f,#3b82f6)',
+  'linear-gradient(135deg,#374151,#9ca3af)',
+  'linear-gradient(135deg,#0B2545,#C9A84C)',
+]
+
+function FeatureCarousel({ features, featureIcons }) {
+  const trackRef = useRef(null)
+  const [canLeft,  setCanLeft]  = useState(false)
+  const [canRight, setCanRight] = useState(true)
+
+  function updateArrows() {
+    const el = trackRef.current
+    if (!el) return
+    setCanLeft(el.scrollLeft > 4)
+    setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4)
+  }
+
+  function scroll(dir) {
+    const el = trackRef.current; if (!el) return
+    el.scrollBy({ left: dir * 280, behavior: 'smooth' })
+  }
+
+  return (
+    <section style={{ background: 'var(--sf-surface)', borderBottom: '1px solid var(--sf-border)' }}>
+      <div className="max-w-[1360px] mx-auto px-6 lg:px-10 py-8">
+        <p className="text-[9.5px] font-bold tracking-[.2em] uppercase mb-5" style={{ color: 'var(--sf-muted)' }}>
+          Tout ce que SPORTFIN vous apporte
+        </p>
+        <div className="relative">
+          {/* Left arrow */}
+          {canLeft && (
+            <button onClick={() => scroll(-1)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 w-9 h-9 rounded-full shadow-lg flex items-center justify-center text-[15px] font-bold transition-all hover:scale-110"
+              style={{ background: 'var(--sf-primary)', color: '#fff' }}>
+              ‹
+            </button>
+          )}
+
+          {/* Scrollable track */}
+          <div
+            ref={trackRef}
+            onScroll={updateArrows}
+            className="flex gap-4 overflow-x-auto pb-1"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}>
+            {features.map((f, i) => {
+              const imgUrl = featureIcons[f.label]
+              return (
+                <div key={f.label}
+                  className="flex-shrink-0 relative rounded-2xl overflow-hidden cursor-default group"
+                  style={{ width: 200, height: 260 }}>
+                  {/* Background */}
+                  {imgUrl
+                    ? <img src={imgUrl} alt={f.label} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    : <div className="absolute inset-0" style={{ background: FALLBACK_GRADIENTS[i % FALLBACK_GRADIENTS.length] }} />
+                  }
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0" style={{ background: CARD_GRADIENT }} />
+                  {/* Emoji (quand pas d'image) */}
+                  {!imgUrl && (
+                    <div className="absolute top-5 left-5 text-[36px] drop-shadow-md transition-transform duration-300 group-hover:scale-110">
+                      {f.icon}
+                    </div>
+                  )}
+                  {/* Text overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <div className="font-bold text-[13.5px] leading-snug text-white mb-1"
+                      style={{ fontFamily: 'var(--sf-font-heading)', textShadow: '0 1px 4px rgba(0,0,0,.4)' }}>
+                      {f.label}
+                    </div>
+                    <div className="text-[11px] leading-snug text-white/70">{f.desc}</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Right arrow */}
+          {canRight && (
+            <button onClick={() => scroll(1)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 w-9 h-9 rounded-full shadow-lg flex items-center justify-center text-[15px] font-bold transition-all hover:scale-110"
+              style={{ background: 'var(--sf-primary)', color: '#fff' }}>
+              ›
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function Home() {
   const { theme } = useTheme()
   const [allArticles,      setAllArticles]      = useState([])
@@ -115,31 +213,7 @@ export default function Home() {
     .filter(k => k !== 'hero')
 
   const FeaturesSection = theme.sections?.showFeatures !== false ? (
-    <section key="features" style={{ background: 'var(--sf-surface)', borderBottom: '1px solid var(--sf-border)' }}>
-      <div className="max-w-[1200px] mx-auto px-6 lg:px-10 py-5">
-        <p className="text-center text-[9.5px] font-bold tracking-[.2em] uppercase mb-6" style={{ color: 'var(--sf-muted)' }}>
-          Tout ce que SPORTFIN vous apporte
-        </p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-          {FEATURES.map(f => (
-            <div key={f.label}
-              className="flex flex-col items-center text-center px-2 py-3 rounded-xl transition-all cursor-default group"
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--sf-bg)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '' }}
-            >
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[17px] mb-2 transition-transform group-hover:scale-110 overflow-hidden"
-                style={{ background: 'var(--sf-bg)', border: '1px solid var(--sf-border)' }}>
-                {theme.featureIcons?.[f.label]
-                  ? <img src={theme.featureIcons[f.label]} alt={f.label} className="w-full h-full object-cover" />
-                  : f.icon}
-              </div>
-              <div className="text-[10.5px] font-semibold leading-snug mb-0.5" style={{ color: 'var(--sf-text)' }}>{f.label}</div>
-              <div className="text-[9.5px] leading-snug hidden lg:block" style={{ color: 'var(--sf-muted)' }}>{f.desc}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+    <FeatureCarousel key="features" features={FEATURES} featureIcons={theme.featureIcons || {}} />
   ) : null
 
   const ArticlesSection = theme.sections?.showArticles !== false ? (
