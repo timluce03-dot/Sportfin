@@ -10,7 +10,6 @@ const NAV = [
   { to: '/cours',         label: 'Cours' },
   { to: '/certification', label: 'Certification' },
   { to: '/career',        label: 'Career Center' },
-  { to: '/podcasts',      label: 'Podcasts' },
   { to: '/quiz',          label: 'Quiz Sport' },
   { to: '/profil',        label: 'Profil' },
 ]
@@ -89,9 +88,6 @@ export default function Navbar() {
           <div className="ml-auto flex items-center gap-2 flex-shrink-0">
             {user ? (
               <>
-                <Link to="/dashboard" className="btn btn-ghost btn-sm hidden sm:inline-flex">
-                  Mon espace
-                </Link>
                 <Link to="/admin" className="btn btn-ghost btn-sm hidden md:inline-flex text-[12px]">
                   Admin
                 </Link>
@@ -164,8 +160,6 @@ export default function Navbar() {
             <div className="p-4 border-t space-y-2" style={{ borderColor: 'var(--sf-border)' }}>
               {user ? (
                 <>
-                  <Link to="/dashboard" onClick={() => setMobile(false)}
-                    className="btn btn-outline w-full justify-center">Mon espace</Link>
                   <button onClick={() => { signOut(); setMobile(false) }}
                     className="btn btn-ghost w-full justify-center text-sm">Déconnexion</button>
                 </>
