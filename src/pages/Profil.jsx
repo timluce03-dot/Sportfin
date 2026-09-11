@@ -432,25 +432,51 @@ function LoggedInView({ user, profile, signOut, plans, plansLoading }) {
             </div>
           </div>
 
-          <nav className="space-y-0.5">
-            {[
-              { to: '/dashboard', icon: '📊', label: 'Tableau de bord' },
-              { to: '/cours',     icon: '📚', label: 'Mes cours' },
-              { to: '/quiz',      icon: '🧠', label: 'Quiz Sport' },
-              { to: '/admin',     icon: '⚙️', label: 'Administration' },
-            ].map(({ to, icon, label }) => (
-              <Link
-                key={to}
-                to={to}
-                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-colors"
-                style={{ color: 'var(--sf-text)' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--sf-surface-2, #f0f2f6)')}
-                onMouseLeave={e => (e.currentTarget.style.background = '')}
-              >
-                <span>{icon}</span> {label}
-              </Link>
-            ))}
-          </nav>
+          <div className="space-y-2 text-[13px]">
+            {profile?.civility && (
+              <div className="flex justify-between gap-2">
+                <span style={{ color: 'var(--sf-muted)' }}>Civilité</span>
+                <span className="font-medium text-right" style={{ color: 'var(--sf-text)' }}>{profile.civility}</span>
+              </div>
+            )}
+            {(profile?.first_name || profile?.last_name) && (
+              <div className="flex justify-between gap-2">
+                <span style={{ color: 'var(--sf-muted)' }}>Nom complet</span>
+                <span className="font-medium text-right" style={{ color: 'var(--sf-text)' }}>
+                  {[profile.first_name, profile.last_name].filter(Boolean).join(' ')}
+                </span>
+              </div>
+            )}
+            {profile?.activity && (
+              <div className="flex flex-col gap-0.5">
+                <span style={{ color: 'var(--sf-muted)' }}>Activité</span>
+                <span className="font-medium" style={{ color: 'var(--sf-text)' }}>{profile.activity}</span>
+              </div>
+            )}
+            {profile?.school_type && (
+              <div className="flex flex-col gap-0.5">
+                <span style={{ color: 'var(--sf-muted)' }}>Établissement</span>
+                <span className="font-medium" style={{ color: 'var(--sf-text)' }}>{profile.school_type}</span>
+              </div>
+            )}
+            {profile?.objective && (
+              <div className="flex flex-col gap-0.5">
+                <span style={{ color: 'var(--sf-muted)' }}>Objectif</span>
+                <span className="font-medium" style={{ color: 'var(--sf-text)' }}>{profile.objective}</span>
+              </div>
+            )}
+            {profile?.age_range && (
+              <div className="flex justify-between gap-2">
+                <span style={{ color: 'var(--sf-muted)' }}>Tranche d'âge</span>
+                <span className="font-medium text-right" style={{ color: 'var(--sf-text)' }}>{profile.age_range}</span>
+              </div>
+            )}
+            {!profile?.activity && !profile?.objective && (
+              <p className="text-[12px] italic" style={{ color: 'var(--sf-muted)' }}>
+                Complétez votre profil en vous réinscrivant pour afficher vos informations.
+              </p>
+            )}
+          </div>
 
           <div className="border-t mt-4 pt-4" style={{ borderColor: 'var(--sf-border)' }}>
             <button
