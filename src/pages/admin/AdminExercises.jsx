@@ -41,7 +41,7 @@ function formToPayload(f, exerciseId, position) {
       exercise_id: exerciseId, question: f.question,
       question_type: 'open',
       accepted_answers: JSON.stringify(f.accepted_answers.filter(Boolean)),
-      options: null, is_multi: false, correct_index: null, correct_indexes: null,
+      options: '[]', is_multi: false, correct_index: null, correct_indexes: null,
       explanation: f.explanation, position
     }
   }
