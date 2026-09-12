@@ -38,6 +38,8 @@ import AdminCareerMetiers from './pages/admin/AdminCareerMetiers'
 import AdminTeam from './pages/admin/AdminTeam'
 import AdminFaq from './pages/admin/AdminFaq'
 import AdminFiches from './pages/admin/AdminFiches'
+import AdminCaseStudies from './pages/admin/AdminCaseStudies'
+import CaseStudyPage from './pages/CaseStudyPage'
 
 function PublicLayout() {
   return (
@@ -69,6 +71,7 @@ export default function App() {
               <Route path="/tarifs" element={<Pricing />} />
               <Route path="/profil" element={<Profil />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/cas/:id" element={<CaseStudyPage />} />
             </Route>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
@@ -90,6 +93,7 @@ export default function App() {
               <Route path="team"          element={<AdminTeam />} />
               <Route path="faq"           element={<AdminFaq />} />
               <Route path="fiches"        element={<AdminFiches />} />
+              <Route path="case-studies"  element={<AdminCaseStudies />} />
             </Route>
           </Routes>
         </BrowserRouter>

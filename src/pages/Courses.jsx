@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import { getCoursesByModule } from '../services/coursesService'
 import { getExercises, getExerciseQuestions, saveExerciseResult } from '../services/exercisesService'
 import { saveAttempt } from '../services/progressService'
 import { getFiches } from '../services/fichesService'
+import { getCaseStudies } from '../services/caseStudiesService'
 import StudentDashboard from '../components/StudentDashboard'
 import PartnersScrollBanner from '../components/PartnersScrollBanner'
 
@@ -708,11 +710,67 @@ function FichesSection({ fiches, loading }) {
   )
 }
 
+/* ─── Case Study Cards ────────────────────────────────────────── */
+const DIFF_LABELS = { easy: 'Accessible', intermediate: 'Intermédiaire', expert: 'Expert' }
+const DIFF_COLORS = { easy: '#10b981', intermediate: '#f59e0b', expert: '#ef4444' }
+
+function CaseStudyCard({ cs }) {
+  const navigate = useNavigate()
+  return (
+    <div
+      onClick={() => navigate(`/cas/${cs.id}`)}
+      className="relative rounded-2xl overflow-hidden cursor-pointer group flex-shrink-0"
+      style={{
+        width: 220, height: 220,
+        background: 'linear-gradient(155deg, #071a32 0%, #0B2545 55%, #122d58 100%)',
+        border: '1.5px solid rgba(201,168,76,.25)',
+        transition: 'transform .2s, box-shadow .2s',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.boxShadow = '0 20px 50px rgba(0,0,0,.45)' }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none' }}
+    >
+      {/* Gold corner accent */}
+      <div className="absolute top-0 right-0 w-14 h-14"
+        style={{ background: 'linear-gradient(225deg, rgba(201,168,76,.35) 0%, transparent 70%)' }} />
+
+      <div className="absolute inset-0 p-5 flex flex-col justify-between">
+        <div>
+          {cs.sector && (
+            <span className="text-[9.5px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
+              style={{ background: 'rgba(201,168,76,.15)', color: '#C9A84C', border: '1px solid rgba(201,168,76,.25)' }}>
+              {cs.sector}
+            </span>
+          )}
+          <h3 className="font-serif font-extrabold text-white leading-snug mt-3 text-[13.5px]">{cs.title}</h3>
+          {cs.subtitle && (
+            <p className="text-[11px] mt-1 leading-snug" style={{ color: 'rgba(255,255,255,.45)' }}>{cs.subtitle}</p>
+          )}
+        </div>
+        <div>
+          <div className="flex flex-wrap gap-1 mb-3">
+            {Object.entries(DIFF_LABELS).map(([k, l]) => (
+              <span key={k} className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                style={{ background: `${DIFF_COLORS[k]}22`, color: DIFF_COLORS[k], border: `1px solid ${DIFF_COLORS[k]}44` }}>
+                {l} · {cs[`time_${k}`]}min
+              </span>
+            ))}
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(201,168,76,.7)' }}>Étude de cas</span>
+            <span className="text-white text-[18px] transition-transform group-hover:translate-x-1">→</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ─── Main Page ───────────────────────────────────────────────── */
 export default function Courses() {
   const { user }                          = useAuth()
   const [modules,     setModules]         = useState([])
   const [exercises,   setExercises]       = useState([])
+  const [caseStudies, setCaseStudies]     = useState([])
   const [modErr,      setModErr]          = useState(null)
   const [exErr,       setExErr]           = useState(null)
   const [tab,         setTab]             = useState('programme')
@@ -720,9 +778,10 @@ export default function Courses() {
   const [activeEx,    setActiveEx]        = useState(null)
 
   useEffect(() => {
-    Promise.all([getCoursesByModule(), getExercises()]).then(([mr, er]) => {
+    Promise.all([getCoursesByModule(), getExercises(), getCaseStudies()]).then(([mr, er, cr]) => {
       setModules(mr.data); setModErr(mr.error)
       setExercises(er.data); setExErr(er.error)
+      setCaseStudies(cr.data || [])
       setLoading(false)
     })
   }, [])
@@ -900,6 +959,22 @@ export default function Courses() {
             {!loading && !exErr && exercises.length > 0 && (
               <div className="flex flex-col gap-3 max-w-[860px]">
                 {exercises.map(ex => <ExerciseCard key={ex.id} ex={ex} onStart={setActiveEx} />)}
+              </div>
+            )}
+
+            {/* ── Études de cas ── */}
+            {!loading && caseStudies.length > 0 && (
+              <div className="mt-14">
+                <div className="mb-6">
+                  <span className="eyebrow">Niveau avancé</span>
+                  <h2 className="section-title mb-1">Études de cas</h2>
+                  <p className="section-sub text-[14px]">
+                    Cas d'entretien complets — brief, missions, timer et correction automatique.
+                  </p>
+                </div>
+                <div className="flex gap-5 flex-wrap">
+                  {caseStudies.map(cs => <CaseStudyCard key={cs.id} cs={cs} />)}
+                </div>
               </div>
             )}
           </>
