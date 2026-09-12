@@ -1,5 +1,73 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
+
+/* ─── Markdown renderer ──────────────────────────────────────────── */
+function renderMd(text) {
+  if (!text) return ''
+  let html = text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+  // Tables: | col | col |\n|---|---|\n| val | val |
+  html = html.replace(/(\|.+\|\n\|[-:| ]+\|\n(?:\|.+\|\n?)*)/g, block => {
+    const lines = block.trim().split('\n')
+    if (lines.length < 3) return block
+    const headers = lines[0].split('|').map(c => c.trim()).filter(Boolean)
+    const rows = lines.slice(2).map(row =>
+      '<tr>' + row.split('|').map(c => c.trim()).filter(Boolean).map(c => `<td>${c}</td>`).join('') + '</tr>'
+    )
+    return `<table class="md-table"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`
+  })
+
+  html = html
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .split(/\n\n+/)
+    .map(p => p.trim() ? (p.startsWith('<table') ? p : `<p>${p.replace(/\n/g, '<br>')}</p>`) : '')
+    .join('')
+
+  return html
+}
+
+/* ─── Markdown toolbar ───────────────────────────────────────────── */
+function MdToolbar({ textareaRef, value, onChange }) {
+  function wrap(before, after, placeholder) {
+    const el = textareaRef.current
+    if (!el) return
+    const start = el.selectionStart, end = el.selectionEnd
+    const selected = value.slice(start, end) || placeholder
+    const next = value.slice(0, start) + before + selected + after + value.slice(end)
+    onChange(next)
+    setTimeout(() => {
+      el.focus()
+      el.setSelectionRange(start + before.length, start + before.length + selected.length)
+    }, 0)
+  }
+  function insertTable() {
+    const el = textareaRef.current
+    if (!el) return
+    const tpl = '\n\n| Colonne 1 | Colonne 2 | Colonne 3 |\n|-----------|-----------|----------|\n| Valeur    | Valeur    | Valeur    |\n| Valeur    | Valeur    | Valeur    |\n\n'
+    const pos = el.selectionEnd
+    onChange(value.slice(0, pos) + tpl + value.slice(pos))
+    setTimeout(() => el.focus(), 0)
+  }
+  const btn = (label, title, fn) => (
+    <button key={label} type="button" title={title} onClick={fn}
+      className="px-2.5 py-1 rounded-lg text-[12px] font-bold border transition-colors hover:bg-gray-100"
+      style={{ borderColor: '#d1d5db', color: '#374151' }}>
+      {label}
+    </button>
+  )
+  return (
+    <div className="flex gap-1.5 flex-wrap mb-1.5 px-2 py-1.5 rounded-lg" style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}>
+      {btn('G', 'Gras (Ctrl+B)', () => wrap('**', '**', 'texte en gras'))}
+      {btn('I', 'Italique', () => wrap('*', '*', 'texte en italique'))}
+      {btn('Tableau', 'Insérer un tableau', insertTable)}
+      <span className="ml-2 text-[10.5px] self-center" style={{ color: '#9ca3af' }}>
+        Markdown · **gras** · *italique* · | tableau |
+      </span>
+    </div>
+  )
+}
 
 const LETTERS = ['A', 'B', 'C', 'D']
 
@@ -197,6 +265,8 @@ function CaseStudyForm({ initial, onSaved, onCancel }) {
   const [form, setForm] = useState(initial || CS_EMPTY)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
+  const [preview, setPreview] = useState(false)
+  const contextRef = useRef(null)
   const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }))
 
   async function save(e) {
@@ -250,9 +320,26 @@ function CaseStudyForm({ initial, onSaved, onCancel }) {
       </div>
 
       <div>
-        <label className="form-label">Brief / Énoncé complet du cas *</label>
-        <textarea className="form-input font-mono text-[13px]" rows={12} value={form.context} onChange={set('context')} required
-          placeholder="Rédigez ici le dossier complet du cas (contexte, données financières, enjeux…). Une ligne vide = nouveau paragraphe." />
+        <div className="flex items-center justify-between mb-1">
+          <label className="form-label mb-0">Brief / Énoncé complet du cas *</label>
+          <button type="button" onClick={() => setPreview(p => !p)}
+            className="text-[11.5px] font-semibold px-3 py-1 rounded-lg transition-colors"
+            style={{ background: preview ? 'var(--sf-primary)' : '#f3f4f6', color: preview ? '#fff' : '#374151' }}>
+            {preview ? '✎ Éditer' : '👁 Aperçu'}
+          </button>
+        </div>
+        {!preview ? (
+          <>
+            <MdToolbar textareaRef={contextRef} value={form.context} onChange={v => setForm(p => ({ ...p, context: v }))} />
+            <textarea ref={contextRef} className="form-input font-mono text-[13px]" rows={16}
+              value={form.context} onChange={set('context')} required
+              placeholder="Rédigez le dossier complet. Utilisez **gras**, *italique*, et le bouton Tableau pour insérer un tableau depuis ChatGPT/Claude." />
+          </>
+        ) : (
+          <div className="rounded-xl border px-6 py-5 text-[13.5px] leading-relaxed min-h-[200px]"
+            style={{ borderColor: 'var(--sf-border)', background: '#fff', color: 'var(--sf-text)' }}
+            dangerouslySetInnerHTML={{ __html: renderMd(form.context) }} />
+        )}
       </div>
 
       <div className="grid grid-cols-3 gap-4">
