@@ -5,27 +5,47 @@ import { getCaseStudy } from '../services/caseStudiesService'
 /* ─── Markdown renderer ──────────────────────────────────────────── */
 function renderMd(text) {
   if (!text) return ''
-  let html = text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const escape = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const isTableRow = l => /^\s*\|/.test(l) && l.includes('|')
+  const isSeparator = l => /^\s*\|[\s\-:\|]+\|/.test(l)
+  const parseCols = l => l.split('|').map(c => c.trim()).filter(Boolean)
 
-  html = html.replace(/(\|.+\|\n\|[-:| ]+\|\n(?:\|.+\|\n?)*)/g, block => {
-    const lines = block.trim().split('\n')
-    if (lines.length < 3) return block
-    const headers = lines[0].split('|').map(c => c.trim()).filter(Boolean)
-    const rows = lines.slice(2).map(row =>
-      '<tr>' + row.split('|').map(c => c.trim()).filter(Boolean).map(c => `<td>${c}</td>`).join('') + '</tr>'
-    )
-    return `<table class="cs-table"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`
-  })
+  const lines = text.split('\n')
+  const blocks = []
+  let i = 0
 
-  html = html
+  while (i < lines.length) {
+    const line = lines[i]
+    // Detect table: current row | separator on next line
+    if (isTableRow(line) && i + 1 < lines.length && isSeparator(lines[i + 1])) {
+      const headers = parseCols(escape(line))
+      i += 2 // skip header + separator
+      const rows = []
+      while (i < lines.length && isTableRow(lines[i])) {
+        rows.push(parseCols(escape(lines[i])))
+        i++
+      }
+      const thead = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>`
+      const tbody = `<tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`
+      blocks.push(`<table class="cs-table">${thead}${tbody}</table>`)
+      continue
+    }
+    blocks.push(escape(line))
+    i++
+  }
+
+  // Re-join, apply inline formatting, split into paragraphs
+  return blocks.join('\n')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .split(/\n\n+/)
-    .map(p => p.trim() ? (p.startsWith('<table') ? p : `<p>${p.replace(/\n/g, '<br>')}</p>`) : '')
+    .map(p => {
+      p = p.trim()
+      if (!p) return ''
+      if (p.startsWith('<table')) return p
+      return `<p>${p.replace(/\n/g, '<br>')}</p>`
+    })
     .join('')
-
-  return html
 }
 
 /* ─── Fuzzy matching ─────────────────────────────────────────────── */

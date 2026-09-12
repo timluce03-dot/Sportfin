@@ -4,28 +4,38 @@ import { supabase } from '../../lib/supabase'
 /* ─── Markdown renderer ──────────────────────────────────────────── */
 function renderMd(text) {
   if (!text) return ''
-  let html = text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const escape = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const isTableRow = l => /^\s*\|/.test(l) && l.includes('|')
+  const isSeparator = l => /^\s*\|[\s\-:\|]+\|/.test(l)
+  const parseCols = l => l.split('|').map(c => c.trim()).filter(Boolean)
 
-  // Tables: | col | col |\n|---|---|\n| val | val |
-  html = html.replace(/(\|.+\|\n\|[-:| ]+\|\n(?:\|.+\|\n?)*)/g, block => {
-    const lines = block.trim().split('\n')
-    if (lines.length < 3) return block
-    const headers = lines[0].split('|').map(c => c.trim()).filter(Boolean)
-    const rows = lines.slice(2).map(row =>
-      '<tr>' + row.split('|').map(c => c.trim()).filter(Boolean).map(c => `<td>${c}</td>`).join('') + '</tr>'
-    )
-    return `<table class="md-table"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`
-  })
-
-  html = html
+  const lines = text.split('\n')
+  const blocks = []
+  let i = 0
+  while (i < lines.length) {
+    const line = lines[i]
+    if (isTableRow(line) && i + 1 < lines.length && isSeparator(lines[i + 1])) {
+      const headers = parseCols(escape(line))
+      i += 2
+      const rows = []
+      while (i < lines.length && isTableRow(lines[i])) {
+        rows.push(parseCols(escape(lines[i])))
+        i++
+      }
+      const thead = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>`
+      const tbody = `<tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`
+      blocks.push(`<table class="md-table">${thead}${tbody}</table>`)
+      continue
+    }
+    blocks.push(escape(line))
+    i++
+  }
+  return blocks.join('\n')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .split(/\n\n+/)
-    .map(p => p.trim() ? (p.startsWith('<table') ? p : `<p>${p.replace(/\n/g, '<br>')}</p>`) : '')
+    .map(p => { p = p.trim(); if (!p) return ''; if (p.startsWith('<table')) return p; return `<p>${p.replace(/\n/g, '<br>')}</p>` })
     .join('')
-
-  return html
 }
 
 /* ─── Markdown toolbar ───────────────────────────────────────────── */
@@ -336,6 +346,7 @@ function CaseStudyForm({ initial, onSaved, onCancel }) {
               placeholder="Rédigez le dossier complet. Utilisez **gras**, *italique*, et le bouton Tableau pour insérer un tableau depuis ChatGPT/Claude." />
           </>
         ) : (
+          <style>{`.md-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}.md-table th{background:#0B2545;color:#fff;font-weight:700;padding:8px 12px;text-align:left}.md-table td{padding:7px 12px;border-bottom:1px solid #e5e7eb}.md-table tr:last-child td{border-bottom:none}.md-table tr:nth-child(even) td{background:#f9fafb}`}</style>
           <div className="rounded-xl border px-6 py-5 text-[13.5px] leading-relaxed min-h-[200px]"
             style={{ borderColor: 'var(--sf-border)', background: '#fff', color: 'var(--sf-text)' }}
             dangerouslySetInnerHTML={{ __html: renderMd(form.context) }} />
