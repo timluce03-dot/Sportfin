@@ -2,40 +2,68 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 
 /* ─── Markdown renderer ──────────────────────────────────────────── */
-function renderMd(text) {
+function renderMd(text, tableClass = 'md-table') {
   if (!text) return ''
-  const escape = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  const isTableRow = l => /^\s*\|/.test(l) && l.includes('|')
-  const isSeparator = l => /^\s*\|[\s\-:\|]+\|/.test(l)
-  const parseCols = l => l.split('|').map(c => c.trim()).filter(Boolean)
-
-  const lines = text.split('\n')
-  const blocks = []
-  let i = 0
-  while (i < lines.length) {
-    const line = lines[i]
-    if (isTableRow(line) && i + 1 < lines.length && isSeparator(lines[i + 1])) {
-      const headers = parseCols(escape(line))
-      i += 2
-      const rows = []
-      while (i < lines.length && isTableRow(lines[i])) {
-        rows.push(parseCols(escape(lines[i])))
-        i++
-      }
-      const thead = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>`
-      const tbody = `<tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`
-      blocks.push(`<table class="md-table">${thead}${tbody}</table>`)
-      continue
-    }
-    blocks.push(escape(line))
-    i++
-  }
-  return blocks.join('\n')
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const inline = s => esc(s)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .split(/\n\n+/)
-    .map(p => { p = p.trim(); if (!p) return ''; if (p.startsWith('<table')) return p; return `<p>${p.replace(/\n/g, '<br>')}</p>` })
-    .join('')
+  const isRow = l => /^\s*\|/.test(l) && l.includes('|')
+  const isSep = l => /^\s*\|[\s\-:\|]+\|/.test(l)
+  const cols = l => l.split('|').map(c => c.trim()).filter(Boolean)
+  const lines = text.split('\n')
+  const out = []
+  let i = 0
+  while (i < lines.length) {
+    const ln = lines[i]
+    if (isRow(ln) && i + 1 < lines.length && isSep(lines[i + 1])) {
+      const ths = cols(ln).map(h => `<th>${inline(h)}</th>`).join('')
+      i += 2
+      const trs = []
+      while (i < lines.length && isRow(lines[i])) {
+        trs.push(`<tr>${cols(lines[i]).map(c => `<td>${inline(c)}</td>`).join('')}</tr>`)
+        i++
+      }
+      out.push(`<table class="${tableClass}"><thead><tr>${ths}</tr></thead><tbody>${trs.join('')}</tbody></table>`)
+      continue
+    }
+    const hm = ln.match(/^(#{1,6})\s+(.*)/)
+    if (hm) {
+      const lvl = hm[1].length
+      const fs = lvl === 1 ? '20px' : lvl === 2 ? '17px' : '15px'
+      const fw = lvl <= 2 ? '800' : '700'
+      out.push(`<h${lvl} style="font-size:${fs};font-weight:${fw};margin:18px 0 8px;color:var(--sf-primary)">${inline(hm[2])}</h${lvl}>`)
+      i++; continue
+    }
+    if (/^[-*]\s/.test(ln)) {
+      const items = []
+      while (i < lines.length && /^[-*]\s/.test(lines[i])) {
+        items.push(`<li style="margin-bottom:4px">${inline(lines[i].replace(/^[-*]\s+/, ''))}</li>`)
+        i++
+      }
+      out.push(`<ul style="margin:8px 0 10px 20px;padding:0;list-style:disc">${items.join('')}</ul>`)
+      continue
+    }
+    if (/^\d+\.\s/.test(ln)) {
+      const items = []
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+        items.push(`<li style="margin-bottom:6px">${inline(lines[i].replace(/^\d+\.\s+/, ''))}</li>`)
+        i++
+      }
+      out.push(`<ol style="margin:8px 0 10px 20px;padding:0;list-style:decimal">${items.join('')}</ol>`)
+      continue
+    }
+    if (!ln.trim()) { i++; continue }
+    const pLines = []
+    while (i < lines.length) {
+      const l = lines[i]
+      if (!l.trim() || /^[-*]\s/.test(l) || /^\d+\.\s/.test(l) || /^#+\s/.test(l) || isRow(l)) break
+      pLines.push(inline(l))
+      i++
+    }
+    if (pLines.length) out.push(`<p style="margin:0 0 12px">${pLines.join('<br>')}</p>`)
+  }
+  return out.join('')
 }
 
 /* ─── Markdown toolbar ───────────────────────────────────────────── */
@@ -84,7 +112,7 @@ const LETTERS = ['A', 'B', 'C', 'D']
 const CS_EMPTY = {
   title: '', subtitle: '', sector: '', context: '',
   time_easy: 35, time_intermediate: 20, time_expert: 12,
-  key_takeaways: '', published: false, position: 0,
+  key_takeaways: '', correction: '', published: false, position: 0,
 }
 
 const M_EMPTY = {
@@ -270,13 +298,32 @@ function MissionForm({ caseStudyId, initialData, position, onSaved, onCancel }) 
   )
 }
 
+/* ─── Font size control ──────────────────────────────────────────── */
+function FontSizeCtrl({ value, onChange }) {
+  return (
+    <div className="flex items-center gap-1 ml-2">
+      <button type="button" onClick={() => onChange(Math.max(10, value - 1))}
+        className="w-6 h-6 rounded text-[11px] font-bold border hover:bg-gray-100 flex items-center justify-center"
+        style={{ borderColor: '#d1d5db', color: '#374151' }}>A−</button>
+      <span className="text-[10px] w-6 text-center" style={{ color: '#9ca3af' }}>{value}</span>
+      <button type="button" onClick={() => onChange(Math.min(22, value + 1))}
+        className="w-6 h-6 rounded text-[11px] font-bold border hover:bg-gray-100 flex items-center justify-center"
+        style={{ borderColor: '#d1d5db', color: '#374151' }}>A+</button>
+    </div>
+  )
+}
+
 /* ─── Case Study Form ────────────────────────────────────────────── */
 function CaseStudyForm({ initial, onSaved, onCancel }) {
-  const [form, setForm] = useState(initial || CS_EMPTY)
+  const [form, setForm] = useState(initial ? { ...CS_EMPTY, ...initial } : CS_EMPTY)
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState('')
   const [preview, setPreview] = useState(false)
+  const [corrPreview, setCorrPreview] = useState(false)
+  const [contextFs, setContextFs] = useState(13)
+  const [corrFs, setCorrFs] = useState(13)
   const contextRef = useRef(null)
+  const corrRef = useRef(null)
   const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }))
 
   async function save(e) {
@@ -291,6 +338,7 @@ function CaseStudyForm({ initial, onSaved, onCancel }) {
     const payload = {
       title: form.title, subtitle: form.subtitle, sector: form.sector,
       context: form.context,
+      correction: form.correction || '',
       time_easy: Number(form.time_easy),
       time_intermediate: Number(form.time_intermediate),
       time_expert: Number(form.time_expert),
@@ -313,6 +361,7 @@ function CaseStudyForm({ initial, onSaved, onCancel }) {
 
   return (
     <form onSubmit={save} className="space-y-4">
+      <style>{`.md-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}.md-table th{background:#0B2545;color:#fff;font-weight:700;padding:8px 12px;text-align:left}.md-table td{padding:7px 12px;border-bottom:1px solid #e5e7eb}.md-table tr:last-child td{border-bottom:none}.md-table tr:nth-child(even) td{background:#f9fafb}`}</style>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="form-label">Titre *</label>
@@ -329,9 +378,13 @@ function CaseStudyForm({ initial, onSaved, onCancel }) {
         <input className="form-input" value={form.subtitle} onChange={set('subtitle')} placeholder="Bref descriptif du cas…" />
       </div>
 
+      {/* ── Énoncé ── */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="form-label mb-0">Brief / Énoncé complet du cas *</label>
+          <div className="flex items-center">
+            <label className="form-label mb-0">Brief / Énoncé complet du cas *</label>
+            {!preview && <FontSizeCtrl value={contextFs} onChange={setContextFs} />}
+          </div>
           <button type="button" onClick={() => setPreview(p => !p)}
             className="text-[11.5px] font-semibold px-3 py-1 rounded-lg transition-colors"
             style={{ background: preview ? 'var(--sf-primary)' : '#f3f4f6', color: preview ? '#fff' : '#374151' }}>
@@ -341,15 +394,15 @@ function CaseStudyForm({ initial, onSaved, onCancel }) {
         {!preview ? (
           <>
             <MdToolbar textareaRef={contextRef} value={form.context} onChange={v => setForm(p => ({ ...p, context: v }))} />
-            <textarea ref={contextRef} className="form-input font-mono text-[13px]" rows={16}
+            <textarea ref={contextRef} className="form-input font-mono" rows={16}
+              style={{ fontSize: contextFs + 'px' }}
               value={form.context} onChange={set('context')} required
-              placeholder="Rédigez le dossier complet. Utilisez **gras**, *italique*, et le bouton Tableau pour insérer un tableau depuis ChatGPT/Claude." />
+              placeholder="Rédigez le dossier complet. Utilisez **gras**, *italique*, ### Titre, 1. liste, - puce, et le bouton Tableau." />
           </>
         ) : (
-          <style>{`.md-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}.md-table th{background:#0B2545;color:#fff;font-weight:700;padding:8px 12px;text-align:left}.md-table td{padding:7px 12px;border-bottom:1px solid #e5e7eb}.md-table tr:last-child td{border-bottom:none}.md-table tr:nth-child(even) td{background:#f9fafb}`}</style>
           <div className="rounded-xl border px-6 py-5 text-[13.5px] leading-relaxed min-h-[200px]"
             style={{ borderColor: 'var(--sf-border)', background: '#fff', color: 'var(--sf-text)' }}
-            dangerouslySetInnerHTML={{ __html: renderMd(form.context) }} />
+            dangerouslySetInnerHTML={{ __html: renderMd(form.context, 'md-table') }} />
         )}
       </div>
 
@@ -362,11 +415,32 @@ function CaseStudyForm({ initial, onSaved, onCancel }) {
         ))}
       </div>
 
+      {/* ── Correction ── */}
       <div>
-        <label className="form-label">Points clés à retenir <span className="font-normal text-gray-400">(un point par ligne — affichés dans la correction)</span></label>
-        <textarea className="form-input" rows={4} value={takeawaysStr}
-          onChange={e => setForm(p => ({ ...p, key_takeaways: e.target.value }))}
-          placeholder={"La VNC est le seul critère pertinent pour calculer le gain\nLe produit net = prix de cession − coûts directement liés"} />
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center">
+            <label className="form-label mb-0">Correction complète <span className="font-normal text-gray-400">(affichée à la fin)</span></label>
+            {!corrPreview && <FontSizeCtrl value={corrFs} onChange={setCorrFs} />}
+          </div>
+          <button type="button" onClick={() => setCorrPreview(p => !p)}
+            className="text-[11.5px] font-semibold px-3 py-1 rounded-lg transition-colors"
+            style={{ background: corrPreview ? 'var(--sf-primary)' : '#f3f4f6', color: corrPreview ? '#fff' : '#374151' }}>
+            {corrPreview ? '✎ Éditer' : '👁 Aperçu'}
+          </button>
+        </div>
+        {!corrPreview ? (
+          <>
+            <MdToolbar textareaRef={corrRef} value={form.correction || ''} onChange={v => setForm(p => ({ ...p, correction: v }))} />
+            <textarea ref={corrRef} className="form-input font-mono" rows={10}
+              style={{ fontSize: corrFs + 'px' }}
+              value={form.correction || ''} onChange={set('correction')}
+              placeholder="Rédigez la correction complète : raisonnement, calculs, conclusions. Markdown supporté (### titres, 1. listes, **gras**, tableaux…)" />
+          </>
+        ) : (
+          <div className="rounded-xl border px-6 py-5 text-[13.5px] leading-relaxed min-h-[100px]"
+            style={{ borderColor: 'var(--sf-border)', background: '#fff', color: 'var(--sf-text)' }}
+            dangerouslySetInnerHTML={{ __html: renderMd(form.correction || '', 'md-table') }} />
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

@@ -5,47 +5,66 @@ import { getCaseStudy } from '../services/caseStudiesService'
 /* ─── Markdown renderer ──────────────────────────────────────────── */
 function renderMd(text) {
   if (!text) return ''
-  const escape = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  const isTableRow = l => /^\s*\|/.test(l) && l.includes('|')
-  const isSeparator = l => /^\s*\|[\s\-:\|]+\|/.test(l)
-  const parseCols = l => l.split('|').map(c => c.trim()).filter(Boolean)
-
-  const lines = text.split('\n')
-  const blocks = []
-  let i = 0
-
-  while (i < lines.length) {
-    const line = lines[i]
-    // Detect table: current row | separator on next line
-    if (isTableRow(line) && i + 1 < lines.length && isSeparator(lines[i + 1])) {
-      const headers = parseCols(escape(line))
-      i += 2 // skip header + separator
-      const rows = []
-      while (i < lines.length && isTableRow(lines[i])) {
-        rows.push(parseCols(escape(lines[i])))
-        i++
-      }
-      const thead = `<thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>`
-      const tbody = `<tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`
-      blocks.push(`<table class="cs-table">${thead}${tbody}</table>`)
-      continue
-    }
-    blocks.push(escape(line))
-    i++
-  }
-
-  // Re-join, apply inline formatting, split into paragraphs
-  return blocks.join('\n')
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const inline = s => esc(s)
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .split(/\n\n+/)
-    .map(p => {
-      p = p.trim()
-      if (!p) return ''
-      if (p.startsWith('<table')) return p
-      return `<p>${p.replace(/\n/g, '<br>')}</p>`
-    })
-    .join('')
+  const isRow = l => /^\s*\|/.test(l) && l.includes('|')
+  const isSep = l => /^\s*\|[\s\-:\|]+\|/.test(l)
+  const cols = l => l.split('|').map(c => c.trim()).filter(Boolean)
+  const lines = text.split('\n')
+  const out = []
+  let i = 0
+  while (i < lines.length) {
+    const ln = lines[i]
+    if (isRow(ln) && i + 1 < lines.length && isSep(lines[i + 1])) {
+      const ths = cols(ln).map(h => `<th>${inline(h)}</th>`).join('')
+      i += 2
+      const trs = []
+      while (i < lines.length && isRow(lines[i])) {
+        trs.push(`<tr>${cols(lines[i]).map(c => `<td>${inline(c)}</td>`).join('')}</tr>`)
+        i++
+      }
+      out.push(`<table class="cs-table"><thead><tr>${ths}</tr></thead><tbody>${trs.join('')}</tbody></table>`)
+      continue
+    }
+    const hm = ln.match(/^(#{1,6})\s+(.*)/)
+    if (hm) {
+      const lvl = hm[1].length
+      const fs = lvl === 1 ? '20px' : lvl === 2 ? '17px' : '15px'
+      const fw = lvl <= 2 ? '800' : '700'
+      out.push(`<h${lvl} style="font-size:${fs};font-weight:${fw};margin:18px 0 8px;color:var(--sf-primary)">${inline(hm[2])}</h${lvl}>`)
+      i++; continue
+    }
+    if (/^[-*]\s/.test(ln)) {
+      const items = []
+      while (i < lines.length && /^[-*]\s/.test(lines[i])) {
+        items.push(`<li style="margin-bottom:4px">${inline(lines[i].replace(/^[-*]\s+/, ''))}</li>`)
+        i++
+      }
+      out.push(`<ul style="margin:8px 0 10px 20px;padding:0;list-style:disc">${items.join('')}</ul>`)
+      continue
+    }
+    if (/^\d+\.\s/.test(ln)) {
+      const items = []
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+        items.push(`<li style="margin-bottom:6px">${inline(lines[i].replace(/^\d+\.\s+/, ''))}</li>`)
+        i++
+      }
+      out.push(`<ol style="margin:8px 0 10px 20px;padding:0;list-style:decimal">${items.join('')}</ol>`)
+      continue
+    }
+    if (!ln.trim()) { i++; continue }
+    const pLines = []
+    while (i < lines.length) {
+      const l = lines[i]
+      if (!l.trim() || /^[-*]\s/.test(l) || /^\d+\.\s/.test(l) || /^#+\s/.test(l) || isRow(l)) break
+      pLines.push(inline(l))
+      i++
+    }
+    if (pLines.length) out.push(`<p style="margin:0 0 12px">${pLines.join('<br>')}</p>`)
+  }
+  return out.join('')
 }
 
 /* ─── Fuzzy matching ─────────────────────────────────────────────── */
@@ -503,22 +522,15 @@ export default function CaseStudyPage() {
               ))}
             </div>
 
-            {/* Points clés */}
-            {takeaways.length > 0 && (
+            {/* Correction rédigée */}
+            {cs.correction && (
               <div className="rounded-2xl p-6 mb-8"
                 style={{ background: 'linear-gradient(135deg, rgba(201,168,76,.08), rgba(201,168,76,.03))', border: '1.5px solid rgba(201,168,76,.35)' }}>
-                <h3 className="font-bold text-[12px] uppercase tracking-widest mb-4" style={{ color: '#8a6012' }}>
-                  ⭐ Points clés à retenir
+                <h3 className="font-bold text-[12px] uppercase tracking-widest mb-5" style={{ color: '#8a6012' }}>
+                  ⭐ Correction complète
                 </h3>
-                <ul className="space-y-3">
-                  {takeaways.map((t, i) => (
-                    <li key={i} className="flex items-start gap-3 text-[13.5px]" style={{ color: 'var(--sf-text)' }}>
-                      <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold mt-0.5"
-                        style={{ background: 'rgba(201,168,76,.25)', color: '#8a6012' }}>{i + 1}</span>
-                      {t}
-                    </li>
-                  ))}
-                </ul>
+                <div className="text-[13.5px] leading-[1.85]" style={{ color: 'var(--sf-text)' }}
+                  dangerouslySetInnerHTML={{ __html: renderMd(cs.correction) }} />
               </div>
             )}
 
