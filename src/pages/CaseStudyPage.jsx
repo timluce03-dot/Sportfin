@@ -381,6 +381,7 @@ export default function CaseStudyPage() {
     setTimeLeft(secs)
     setStartedAt(Date.now())
     setPhase('active')
+    window.scrollTo({ top: 0, behavior: 'instant' })
   }
 
   useEffect(() => {
