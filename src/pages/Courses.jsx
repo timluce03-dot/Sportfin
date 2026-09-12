@@ -417,31 +417,35 @@ function CourseItem({ course, idx, exercises }) {
   const linked = exercises.filter(ex => ex.chapter_id === course.id)
 
   return (
-    <div className="border rounded-xl overflow-hidden" style={{ borderColor: 'var(--sf-border)' }}>
-      <button onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
-        style={{ background: open ? 'rgba(11,37,69,.03)' : 'transparent' }}>
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[12px] font-bold flex-shrink-0"
-          style={!course.is_premium
-            ? { background: 'rgba(16,185,129,.1)', color: '#059669' }
-            : { background: 'rgba(11,37,69,.07)', color: 'var(--sf-primary)' }}>
+    <div className="rounded-xl overflow-hidden transition-all"
+      style={{ background: 'linear-gradient(135deg, #0c2040 0%, #0f2d52 100%)', border: open ? '1px solid rgba(201,168,76,.3)' : '1px solid rgba(255,255,255,.08)' }}>
+      <div className="flex items-center gap-4 px-5 py-4">
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-[12px] font-extrabold flex-shrink-0 text-white"
+          style={{ background: course.is_premium ? 'rgba(201,168,76,.2)' : 'rgba(16,185,129,.2)', color: course.is_premium ? '#C9A84C' : '#10b981' }}>
           {idx + 1}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-semibold leading-snug" style={{ color: 'var(--sf-text)' }}>{course.title}</div>
+          <div className="text-[13.5px] font-semibold leading-snug text-white">{course.title}</div>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            {course.duration && <span className="text-[11px]" style={{ color: 'var(--sf-muted)' }}>⏱ {course.duration}</span>}
-            {!course.is_premium && <span className="badge badge-success" style={{ fontSize: 10 }}>Gratuit</span>}
-            {course.pdf_url && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: 'rgba(11,37,69,.07)', color: 'var(--sf-primary)' }}>📄 PDF</span>}
-            {linked.length > 0 && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: 'rgba(99,102,241,.08)', color: '#4f46e5' }}>✏️ {linked.length} exercice{linked.length > 1 ? 's' : ''}</span>}
+            {course.duration && <span className="text-[11px]" style={{ color: 'rgba(255,255,255,.35)' }}>{course.duration}</span>}
+            {!course.is_premium && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'rgba(16,185,129,.15)', color: '#10b981' }}>Gratuit</span>}
+            {linked.length > 0 && <span className="text-[10px] font-semibold" style={{ color: 'rgba(255,255,255,.3)' }}>{linked.length} exercice{linked.length > 1 ? 's' : ''}</span>}
           </div>
         </div>
-        {course.is_premium && <div className="flex-shrink-0 text-[11px]" style={{ color: 'var(--sf-muted)' }}>🔒</div>}
-        <span className="text-[11px] flex-shrink-0" style={{ color: 'var(--sf-muted)' }}>{open ? '▲' : '▼'}</span>
-      </button>
+        {course.is_premium && !open && (
+          <span className="text-[12px] flex-shrink-0" style={{ color: 'rgba(255,255,255,.25)' }}>🔒</span>
+        )}
+        <button onClick={() => setOpen(o => !o)}
+          className="flex-shrink-0 px-4 py-2 rounded-lg font-bold text-[12px] transition-all hover:brightness-110"
+          style={open
+            ? { background: 'rgba(201,168,76,.15)', color: '#C9A84C', border: '1px solid rgba(201,168,76,.3)' }
+            : { background: 'rgba(255,255,255,.07)', color: 'rgba(255,255,255,.65)', border: '1px solid rgba(255,255,255,.1)' }}>
+          {open ? '✕ Fermer' : 'Commencer →'}
+        </button>
+      </div>
 
       {open && (
-        <div className="border-t" style={{ borderColor: 'var(--sf-border)' }}>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
           {course.pdf_url ? (
             <div className="relative group">
               <div className="absolute top-3 right-3 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -450,7 +454,7 @@ function CourseItem({ course, idx, exercises }) {
                     : course.pdf_url}
                   target="_blank" rel="noopener noreferrer"
                   className="text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-md"
-                  style={{ background: 'var(--sf-primary)', color: '#fff' }}>
+                  style={{ background: '#0B2545', color: '#fff' }}>
                   ↗ Nouvel onglet
                 </a>
                 <button
@@ -468,16 +472,17 @@ function CourseItem({ course, idx, exercises }) {
                 className="w-full block" style={{ height: 680, border: 'none' }} />
             </div>
           ) : (
-            <div className="px-4 py-6 text-center text-[13px]" style={{ color: 'var(--sf-muted)' }}>
+            <div className="px-4 py-6 text-center text-[13px]" style={{ color: 'rgba(255,255,255,.35)' }}>
               Aucun contenu disponible pour ce cours.
             </div>
           )}
           {linked.length > 0 && (
-            <div className="px-4 py-3 border-t" style={{ background: 'rgba(99,102,241,.04)', borderColor: 'rgba(99,102,241,.15)' }}>
-              <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: '#4f46e5' }}>Exercice{linked.length > 1 ? 's' : ''} associé{linked.length > 1 ? 's' : ''}</p>
+            <div className="px-5 py-3" style={{ borderTop: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.03)' }}>
+              <p className="text-[10.5px] font-bold uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,.35)' }}>Exercices associés</p>
               <div className="flex flex-wrap gap-2">
                 {linked.map(ex => (
-                  <span key={ex.id} className="text-[12px] font-medium text-indigo-700 bg-indigo-50 px-3 py-1 rounded-lg">
+                  <span key={ex.id} className="text-[12px] font-semibold px-3 py-1 rounded-lg"
+                    style={{ background: 'rgba(201,168,76,.12)', color: '#C9A84C' }}>
                     {ex.title}
                   </span>
                 ))}
@@ -492,48 +497,34 @@ function CourseItem({ course, idx, exercises }) {
 
 /* ─── Module Card ─────────────────────────────────────────────── */
 function ModuleCard({ module, exercises }) {
-  const [open, setOpen] = useState(false)
-  const freeCount = module.courses.filter(c => !c.is_premium).length
   const diff = DIFF_COLOR[module.level] || DIFF_COLOR.Débutant
 
   return (
-    <div className="mb-4">
-      <button onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-4 p-5 rounded-2xl text-left transition-all"
-        style={{ background: 'var(--sf-surface)', border: '1px solid var(--sf-border)', boxShadow: 'var(--sf-shadow-xs)' }}>
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl font-black flex-shrink-0 text-white"
-          style={{ background: 'var(--sf-primary)' }}>
-          {module.cover_url ? <img src={module.cover_url} alt="" className="w-full h-full object-cover rounded-xl" /> : '📚'}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-0.5">
-            <div className="text-[14px] font-bold leading-snug" style={{ color: 'var(--sf-text)', fontFamily: 'var(--sf-font-heading)' }}>
-              {module.title}
-            </div>
-            {module.level && (
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: diff.bg, color: diff.color }}>
-                {module.level}
-              </span>
-            )}
-          </div>
-          <div className="text-[11.5px]" style={{ color: 'var(--sf-muted)' }}>
-            {module.courses.length} cours
-            {module.courses.length > 0 && freeCount > 0 ? ` · ${freeCount} gratuit${freeCount > 1 ? 's' : ''}` : module.courses.length > 0 ? ' · Premium' : ''}
-            {module.duration ? ` · ${module.duration}` : ''}
-          </div>
-        </div>
-        <span className="text-[11px] font-bold flex-shrink-0" style={{ color: 'var(--sf-accent)' }}>{open ? '▲' : '▼'}</span>
-      </button>
-
-      {open && (
-        <div className="mt-2 flex flex-col gap-2 pl-2">
-          {module.courses.length === 0 ? (
-            <p className="text-[12px] text-center py-4" style={{ color: 'var(--sf-muted)' }}>Aucun cours dans ce module pour l'instant.</p>
-          ) : (
-            module.courses.map((c, i) => <CourseItem key={c.id || i} course={c} idx={i} exercises={exercises} />)
+    <div className="mb-6">
+      {/* Module header */}
+      <div className="flex items-center gap-3 px-1 mb-3">
+        <div className="h-px flex-1" style={{ background: 'rgba(11,37,69,.12)' }} />
+        <div className="flex items-center gap-2.5">
+          <span className="font-extrabold text-[13px] uppercase tracking-widest" style={{ color: '#0B2545', fontFamily: 'var(--sf-font-heading)' }}>
+            {module.title}
+          </span>
+          {module.level && (
+            <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full" style={{ background: diff.bg, color: diff.color }}>
+              {module.level}
+            </span>
           )}
         </div>
-      )}
+        <div className="h-px flex-1" style={{ background: 'rgba(11,37,69,.12)' }} />
+      </div>
+
+      {/* Courses list — always visible */}
+      <div className="flex flex-col gap-2">
+        {module.courses.length === 0 ? (
+          <p className="text-[12px] text-center py-4" style={{ color: 'var(--sf-muted)' }}>Aucun cours dans ce module pour l'instant.</p>
+        ) : (
+          module.courses.map((c, i) => <CourseItem key={c.id || i} course={c} idx={i} exercises={exercises} />)
+        )}
+      </div>
     </div>
   )
 }
@@ -542,22 +533,27 @@ function ModuleCard({ module, exercises }) {
 function ExerciseCard({ ex, onStart }) {
   const diff = DIFF_COLOR[ex.difficulty] || DIFF_COLOR.Intermédiaire
   return (
-    <div className="card card-hover flex items-center gap-4 p-4">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-        style={{ background: 'rgba(99,102,241,.08)' }}>✏️</div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-          <span className="text-[13.5px] font-semibold" style={{ color: 'var(--sf-text)' }}>{ex.title}</span>
-          <span className="badge text-[10px]" style={{ background: diff.bg, color: diff.color }}>{ex.difficulty}</span>
-        </div>
-        {ex.description && <div className="text-[12px] leading-relaxed" style={{ color: 'var(--sf-muted)' }}>{ex.description}</div>}
-        {ex.chapters?.title && (
-          <div className="text-[11px] mt-0.5" style={{ color: 'var(--sf-muted)' }}>
-            📖 {ex.chapters.title}
+    <div className="rounded-2xl overflow-hidden transition-all"
+      style={{ background: 'linear-gradient(135deg, #0c2040 0%, #0f2d52 100%)', border: '1px solid rgba(255,255,255,.09)', boxShadow: '0 2px 12px rgba(0,0,0,.18)' }}>
+      <div className="flex items-center gap-5 px-6 py-5">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
+            <span className="text-[15px] font-bold" style={{ color: '#fff' }}>{ex.title}</span>
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full" style={{ background: diff.bg, color: diff.color }}>{ex.difficulty}</span>
           </div>
-        )}
+          {ex.description && (
+            <div className="text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,.45)' }}>{ex.description}</div>
+          )}
+          {ex.chapters?.title && (
+            <div className="text-[11.5px] mt-1" style={{ color: 'rgba(255,255,255,.3)' }}>{ex.chapters.title}</div>
+          )}
+        </div>
+        <button onClick={() => onStart(ex)}
+          className="flex-shrink-0 px-5 py-2.5 rounded-xl font-bold text-[13px] transition-all hover:brightness-110"
+          style={{ background: 'linear-gradient(135deg, #C9A84C, #a8873b)', color: '#071a32' }}>
+          Démarrer →
+        </button>
       </div>
-      <button onClick={() => onStart(ex)} className="btn btn-primary btn-sm flex-shrink-0">Démarrer →</button>
     </div>
   )
 }
@@ -728,47 +724,37 @@ function CaseStudyCard({ cs }) {
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,.4)' }}
       onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
     >
-      {/* Gold corner accent */}
-      <div className="absolute top-0 right-0 w-20 h-20"
-        style={{ background: 'linear-gradient(225deg, rgba(201,168,76,.28) 0%, transparent 70%)' }} />
+      <div className="absolute top-0 right-0 w-24 h-24"
+        style={{ background: 'linear-gradient(225deg, rgba(201,168,76,.22) 0%, transparent 70%)' }} />
 
-      <div className="relative flex items-center gap-5 px-6 py-5">
-        {/* Icon */}
-        <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-[22px]"
-          style={{ background: 'rgba(201,168,76,.12)', border: '1px solid rgba(201,168,76,.25)' }}>
-          🎯
-        </div>
-
-        {/* Content */}
+      <div className="relative flex items-center gap-5 px-7 py-6">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             {cs.sector && (
-              <span className="text-[9.5px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full"
-                style={{ background: 'rgba(201,168,76,.15)', color: '#C9A84C', border: '1px solid rgba(201,168,76,.25)' }}>
+              <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-0.5 rounded-full"
+                style={{ background: 'rgba(201,168,76,.15)', color: '#C9A84C', border: '1px solid rgba(201,168,76,.28)' }}>
                 {cs.sector}
               </span>
             )}
-            <span className="text-[9.5px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full"
-              style={{ background: 'rgba(255,255,255,.06)', color: 'rgba(255,255,255,.45)' }}>
+            <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-0.5 rounded-full"
+              style={{ background: 'rgba(255,255,255,.06)', color: 'rgba(255,255,255,.4)' }}>
               Étude de cas
             </span>
           </div>
-          <h3 className="font-serif font-extrabold text-white leading-snug text-[14.5px]">{cs.title}</h3>
+          <h3 className="font-serif font-extrabold text-white leading-snug text-[17px] mb-1">{cs.title}</h3>
           {cs.subtitle && (
-            <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,.4)' }}>{cs.subtitle}</p>
+            <p className="text-[13px] mb-3" style={{ color: 'rgba(255,255,255,.45)' }}>{cs.subtitle}</p>
           )}
-          <div className="flex flex-wrap gap-1.5 mt-2.5">
+          <div className="flex flex-wrap gap-2">
             {Object.entries(DIFF_LABELS).map(([k, l]) => (
-              <span key={k} className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+              <span key={k} className="text-[10px] font-bold px-2.5 py-1 rounded-full"
                 style={{ background: `${DIFF_COLORS[k]}22`, color: DIFF_COLORS[k], border: `1px solid ${DIFF_COLORS[k]}44` }}>
-                {l} · {cs[`time_${k}`]}min
+                {l} · {cs[`time_${k}`]} min
               </span>
             ))}
           </div>
         </div>
-
-        {/* Arrow */}
-        <span className="text-white text-[22px] flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
+        <span className="text-[26px] flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1.5"
           style={{ color: '#C9A84C' }}>→</span>
       </div>
     </div>
@@ -809,10 +795,10 @@ export default function Courses() {
   }, [tab])
 
   const TABS = [
-    { id: 'programme', label: '📚 Programme',         count: null },
-    { id: 'exercices', label: '✏️ Exercices',         count: exercises.length > 0 ? exercises.length : null },
-    { id: 'fiches',    label: '📋 Fiches de révision', count: null },
-    { id: 'dashboard', label: '📊 Mon Dashboard',     count: null },
+    { id: 'programme', label: 'Programme',          count: null },
+    { id: 'exercices', label: 'Exercices pratiques', count: exercises.length > 0 ? exercises.length : null },
+    { id: 'fiches',    label: 'Fiches de révision',  count: null },
+    { id: 'dashboard', label: 'Mon Dashboard',       count: null },
   ]
 
   return (
@@ -858,21 +844,21 @@ export default function Courses() {
       {/* Partners banner */}
       <PartnersScrollBanner />
 
-      {/* Tabs — visible, prominent */}
-      <div className="sticky top-[64px] z-10 border-b shadow-sm" style={{ background: 'var(--sf-surface)', borderColor: 'var(--sf-border)' }}>
-        <div className="max-w-[1360px] mx-auto px-6 lg:px-10 flex">
+      {/* Tabs */}
+      <div className="sticky top-[64px] z-10" style={{ background: '#071a32', borderBottom: '1px solid rgba(255,255,255,.08)', boxShadow: '0 2px 20px rgba(0,0,0,.35)' }}>
+        <div className="max-w-[900px] mx-auto px-6 flex justify-center gap-1.5 py-2.5 flex-wrap">
           {TABS.map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className="py-4 px-6 text-[13.5px] font-bold border-b-[3px] transition-all -mb-px flex items-center gap-1.5"
+              className="py-2 px-5 rounded-full text-[13px] font-semibold transition-all flex items-center gap-1.5"
               style={tab === t.id
-                ? { borderColor: 'var(--sf-accent)', color: 'var(--sf-primary)', background: 'rgba(201,168,76,.04)' }
-                : { borderColor: 'transparent', color: 'var(--sf-muted)' }}>
+                ? { background: 'rgba(201,168,76,.18)', color: '#C9A84C', border: '1px solid rgba(201,168,76,.4)' }
+                : { color: 'rgba(255,255,255,.48)', border: '1px solid transparent' }}>
               {t.label}
               {t.count !== null && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-0.5"
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                   style={tab === t.id
-                    ? { background: 'var(--sf-primary)', color: '#fff' }
-                    : { background: 'var(--sf-border)', color: 'var(--sf-muted)' }}>
+                    ? { background: 'rgba(201,168,76,.25)', color: '#C9A84C' }
+                    : { background: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.45)' }}>
                   {t.count}
                 </span>
               )}
@@ -902,44 +888,60 @@ export default function Courses() {
 
             {/* Module Gold */}
             {!loading && !modErr && modules.length > 0 && (
-              <div className="mt-8 rounded-2xl overflow-hidden"
-                style={{ border: '1.5px solid rgba(201,168,76,.45)', background: 'linear-gradient(135deg, rgba(201,168,76,.07) 0%, rgba(201,168,76,.02) 100%)' }}>
-                <div className="px-5 py-3 flex items-center gap-3 flex-wrap"
-                  style={{ background: 'linear-gradient(90deg, rgba(201,168,76,.18), rgba(201,168,76,.06))', borderBottom: '1px solid rgba(201,168,76,.22)' }}>
-                  <span className="text-[17px]">👑</span>
-                  <span className="font-bold text-[13px] tracking-wide" style={{ color: '#8a6012' }}>MODULE GOLD — Avancé</span>
-                  <span className="ml-auto text-[10px] font-bold px-3 py-1 rounded-full"
-                    style={{ background: 'rgba(201,168,76,.18)', color: '#7a5810', border: '1px solid rgba(201,168,76,.35)' }}>
-                    Plan Premium
+              <div className="mt-10 rounded-2xl overflow-hidden"
+                style={{ background: 'linear-gradient(155deg, #0a0a0a 0%, #111 40%, #1a1100 100%)', border: '1.5px solid rgba(201,168,76,.5)', boxShadow: '0 8px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(201,168,76,.2)' }}>
+                {/* Header */}
+                <div className="px-6 py-4 flex items-center gap-4 flex-wrap"
+                  style={{ background: 'linear-gradient(90deg, rgba(201,168,76,.2) 0%, rgba(201,168,76,.06) 100%)', borderBottom: '1px solid rgba(201,168,76,.25)' }}>
+                  <div>
+                    <div className="text-[9px] font-black uppercase tracking-[0.2em] mb-0.5" style={{ color: 'rgba(201,168,76,.6)' }}>Module Gold</div>
+                    <div className="font-black text-[15px] tracking-wide" style={{ color: '#C9A84C', fontFamily: 'var(--sf-font-heading)' }}>
+                      Private Equity · M&A · Multipropriété
+                    </div>
+                  </div>
+                  <span className="ml-auto text-[10.5px] font-black px-4 py-1.5 rounded-full"
+                    style={{ background: 'rgba(201,168,76,.15)', color: '#C9A84C', border: '1.5px solid rgba(201,168,76,.4)', letterSpacing: '.06em' }}>
+                    PREMIUM
                   </span>
                 </div>
-                <div className="p-5 lg:p-6">
-                  <h3 className="font-serif font-extrabold text-[19px] mb-1.5" style={{ color: 'var(--sf-text)' }}>
-                    Private Equity, M&A & Multipropriété dans le sport
+
+                <div className="p-6 lg:p-8">
+                  <h3 className="font-serif font-extrabold text-[20px] mb-2 leading-snug" style={{ color: '#fff' }}>
+                    Le module qui fait la différence en entretien
                   </h3>
-                  <p className="text-[13px] mb-5 max-w-xl" style={{ color: 'var(--sf-muted)' }}>
-                    Le module qui fait la différence en entretien : valorisation de clubs, stratégies d'acquisition, montages financiers complexes et multipropriété internationale.
+                  <p className="text-[13.5px] mb-7 leading-relaxed" style={{ color: 'rgba(255,255,255,.45)', maxWidth: 560 }}>
+                    Valorisation de clubs, stratégies d'acquisition, montages financiers complexes — le niveau d'expertise attendu par les recruteurs des plus grands acteurs du sport business mondial.
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-7">
                     {[
-                      { icon: '📈', title: 'Private Equity dans le sport', sub: '6 cours · Avancé' },
-                      { icon: '🤝', title: 'M&A & Sport Business', sub: '5 cours · Avancé' },
-                      { icon: '🏟️', title: 'Multipropriété de clubs', sub: '4 cours · Expert' },
+                      {
+                        title: 'Private Equity dans le sport',
+                        desc: 'Maîtrisez les mécanismes de LBO appliqués aux clubs, la structuration de fonds sportifs et la valorisation par les flux de droits médias et de transferts.',
+                      },
+                      {
+                        title: 'M&A & Sport Business',
+                        desc: 'De la due diligence à la signature : valorisation de marques sportives, analyse de synergies, deal structuring et spécificités juridiques des acquisitions de franchises.',
+                      },
+                      {
+                        title: 'Multipropriété de clubs',
+                        desc: 'Décryptez les modèles Red Bull, City Football Group et PSG Holding — gouvernance multi-entités, optimisation fiscale internationale et stratégie de portefeuille.',
+                      },
                     ].map(m => (
-                      <div key={m.title} className="flex items-start gap-3 p-4 rounded-xl"
-                        style={{ background: 'rgba(201,168,76,.07)', border: '1px solid rgba(201,168,76,.18)' }}>
-                        <span className="text-[22px] flex-shrink-0 mt-0.5">{m.icon}</span>
-                        <div>
-                          <div className="text-[13px] font-bold leading-snug mb-0.5" style={{ color: 'var(--sf-text)' }}>{m.title}</div>
-                          <div className="text-[11px]" style={{ color: 'var(--sf-muted)' }}>{m.sub}</div>
-                        </div>
+                      <div key={m.title} className="p-5 rounded-xl"
+                        style={{ background: 'rgba(201,168,76,.07)', border: '1px solid rgba(201,168,76,.2)' }}>
+                        <div className="text-[13px] font-extrabold leading-snug mb-2" style={{ color: '#C9A84C' }}>{m.title}</div>
+                        <div className="text-[12px] leading-relaxed" style={{ color: 'rgba(255,255,255,.4)' }}>{m.desc}</div>
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[13px]">🔒</span>
-                    <span className="text-[12.5px] font-medium" style={{ color: 'var(--sf-muted)' }}>
-                      Accessible avec le plan <span className="font-bold" style={{ color: '#8a6012' }}>Premium 39,99€/mois</span>
+
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+                    style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)' }}>
+                    <span className="text-[14px]">🔒</span>
+                    <span className="text-[12.5px]" style={{ color: 'rgba(255,255,255,.4)' }}>
+                      Accessible avec le plan{' '}
+                      <span className="font-bold" style={{ color: '#C9A84C' }}>Premium — 39,99€/mois</span>
                     </span>
                   </div>
                 </div>
