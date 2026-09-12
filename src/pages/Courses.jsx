@@ -719,35 +719,45 @@ function CaseStudyCard({ cs }) {
   return (
     <div
       onClick={() => navigate(`/cas/${cs.id}`)}
-      className="relative rounded-2xl overflow-hidden cursor-pointer group flex-shrink-0"
+      className="relative rounded-2xl overflow-hidden cursor-pointer group"
       style={{
-        width: 220, height: 220,
         background: 'linear-gradient(155deg, #071a32 0%, #0B2545 55%, #122d58 100%)',
         border: '1.5px solid rgba(201,168,76,.25)',
         transition: 'transform .2s, box-shadow .2s',
       }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.04)'; e.currentTarget.style.boxShadow = '0 20px 50px rgba(0,0,0,.45)' }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none' }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,.4)' }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
     >
       {/* Gold corner accent */}
-      <div className="absolute top-0 right-0 w-14 h-14"
-        style={{ background: 'linear-gradient(225deg, rgba(201,168,76,.35) 0%, transparent 70%)' }} />
+      <div className="absolute top-0 right-0 w-20 h-20"
+        style={{ background: 'linear-gradient(225deg, rgba(201,168,76,.28) 0%, transparent 70%)' }} />
 
-      <div className="absolute inset-0 p-5 flex flex-col justify-between">
-        <div>
-          {cs.sector && (
-            <span className="text-[9.5px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
-              style={{ background: 'rgba(201,168,76,.15)', color: '#C9A84C', border: '1px solid rgba(201,168,76,.25)' }}>
-              {cs.sector}
-            </span>
-          )}
-          <h3 className="font-serif font-extrabold text-white leading-snug mt-3 text-[13.5px]">{cs.title}</h3>
-          {cs.subtitle && (
-            <p className="text-[11px] mt-1 leading-snug" style={{ color: 'rgba(255,255,255,.45)' }}>{cs.subtitle}</p>
-          )}
+      <div className="relative flex items-center gap-5 px-6 py-5">
+        {/* Icon */}
+        <div className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-[22px]"
+          style={{ background: 'rgba(201,168,76,.12)', border: '1px solid rgba(201,168,76,.25)' }}>
+          🎯
         </div>
-        <div>
-          <div className="flex flex-wrap gap-1 mb-3">
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            {cs.sector && (
+              <span className="text-[9.5px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full"
+                style={{ background: 'rgba(201,168,76,.15)', color: '#C9A84C', border: '1px solid rgba(201,168,76,.25)' }}>
+                {cs.sector}
+              </span>
+            )}
+            <span className="text-[9.5px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full"
+              style={{ background: 'rgba(255,255,255,.06)', color: 'rgba(255,255,255,.45)' }}>
+              Étude de cas
+            </span>
+          </div>
+          <h3 className="font-serif font-extrabold text-white leading-snug text-[14.5px]">{cs.title}</h3>
+          {cs.subtitle && (
+            <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,.4)' }}>{cs.subtitle}</p>
+          )}
+          <div className="flex flex-wrap gap-1.5 mt-2.5">
             {Object.entries(DIFF_LABELS).map(([k, l]) => (
               <span key={k} className="text-[9px] font-bold px-2 py-0.5 rounded-full"
                 style={{ background: `${DIFF_COLORS[k]}22`, color: DIFF_COLORS[k], border: `1px solid ${DIFF_COLORS[k]}44` }}>
@@ -755,11 +765,11 @@ function CaseStudyCard({ cs }) {
               </span>
             ))}
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'rgba(201,168,76,.7)' }}>Étude de cas</span>
-            <span className="text-white text-[18px] transition-transform group-hover:translate-x-1">→</span>
-          </div>
         </div>
+
+        {/* Arrow */}
+        <span className="text-white text-[22px] flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
+          style={{ color: '#C9A84C' }}>→</span>
       </div>
     </div>
   )
@@ -940,7 +950,7 @@ export default function Courses() {
 
         {/* EXERCICES */}
         {tab === 'exercices' && (
-          <>
+          <div className="max-w-[860px] mx-auto">
             <div className="mb-7">
               <span className="eyebrow">Mise en pratique</span>
               <h2 className="section-title mb-1">
@@ -951,13 +961,13 @@ export default function Courses() {
               </p>
             </div>
 
-            {loading && <div className="space-y-3 max-w-[860px]">{[1,2,3].map(i => <div key={i} className="h-[80px] skeleton rounded-2xl" />)}</div>}
+            {loading && <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-[80px] skeleton rounded-2xl" />)}</div>}
             {!loading && exErr && <ErrorBlock message={exErr} />}
             {!loading && !exErr && exercises.length === 0 && (
               <EmptyState icon="✏️" title="Les exercices arrivent bientôt" subtitle="Le contenu est en cours de mise en ligne." />
             )}
             {!loading && !exErr && exercises.length > 0 && (
-              <div className="flex flex-col gap-3 max-w-[860px]">
+              <div className="flex flex-col gap-3">
                 {exercises.map(ex => <ExerciseCard key={ex.id} ex={ex} onStart={setActiveEx} />)}
               </div>
             )}
@@ -972,12 +982,12 @@ export default function Courses() {
                     Cas d'entretien complets — brief, missions, timer et correction automatique.
                   </p>
                 </div>
-                <div className="flex gap-5 flex-wrap">
+                <div className="flex flex-col gap-3">
                   {caseStudies.map(cs => <CaseStudyCard key={cs.id} cs={cs} />)}
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* FICHES DE RÉVISION */}
