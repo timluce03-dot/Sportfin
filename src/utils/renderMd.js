@@ -42,22 +42,21 @@ export function renderMd(text, tableClass = 'cs-table') {
     // Simplest correct approach for our use case: apply bold/italic on the raw string,
     // then escape only the non-HTML parts.
     // → Process: bold/italic markers never appear inside KaTeX output, so apply them first.
-    s = s.replace(/\*\*((?:[^*]|\*(?!\*))+)\*\*/g, '\x01$1\x02') // placeholder for <strong>
-    s = s.replace(/\*((?:[^*\n]|\*\*)+)\*(?!\*)/g, '\x03$1\x04') // placeholder for <em>
-    // Now escape raw text portions (anything not already HTML from KaTeX)
-    // We can't easily distinguish KaTeX HTML from raw text here, so we skip escaping
-    // (KaTeX is injected directly; the remaining text will have & < > from LaTeX notation
-    //  which is fine since KaTeX already escaped its own output)
-    s = s.replace(/\x01/g, '<strong>').replace(/\x02/g, '</strong>')
-    s = s.replace(/\x03/g, '<em>').replace(/\x04/g, '</em>')
+    // Bold: **text** — simple greedy match, handles most cases
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Italic: *text* (not **)
+    s = s.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+    // Strip any remaining orphaned ** markers
+    s = s.replace(/\*\*/g, '')
     return s
   }
 
   // Inline for lines that have no math — escape + bold/italic
   function inlineEsc(raw) {
     let s = esc(raw)
-    s = s.replace(/\*\*((?:[^*]|\*(?!\*))+)\*\*/g, '<strong>$1</strong>')
-    s = s.replace(/\*((?:[^*\n]|\*\*)+)\*(?!\*)/g, '<em>$1</em>')
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    s = s.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+    s = s.replace(/\*\*/g, '')
     return s
   }
 
