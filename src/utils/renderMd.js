@@ -42,8 +42,8 @@ export function renderMd(text, tableClass = 'cs-table') {
     // Simplest correct approach for our use case: apply bold/italic on the raw string,
     // then escape only the non-HTML parts.
     // → Process: bold/italic markers never appear inside KaTeX output, so apply them first.
-    s = s.replace(/\*\*(\S[\s\S]*?\S|\S)\*\*/g, '\x01$1\x02') // placeholder for <strong>
-    s = s.replace(/\*(\S[^*\n]*?\S|\S)\*(?!\*)/g, '\x03$1\x04') // placeholder for <em>
+    s = s.replace(/\*\*((?:[^*]|\*(?!\*))+)\*\*/g, '\x01$1\x02') // placeholder for <strong>
+    s = s.replace(/\*((?:[^*\n]|\*\*)+)\*(?!\*)/g, '\x03$1\x04') // placeholder for <em>
     // Now escape raw text portions (anything not already HTML from KaTeX)
     // We can't easily distinguish KaTeX HTML from raw text here, so we skip escaping
     // (KaTeX is injected directly; the remaining text will have & < > from LaTeX notation
@@ -56,8 +56,8 @@ export function renderMd(text, tableClass = 'cs-table') {
   // Inline for lines that have no math — escape + bold/italic
   function inlineEsc(raw) {
     let s = esc(raw)
-    s = s.replace(/\*\*(\S[\s\S]*?\S|\S)\*\*/g, '<strong>$1</strong>')
-    s = s.replace(/\*(\S[^*]*?\S|\S)\*(?!\*)/g, '<em>$1</em>')
+    s = s.replace(/\*\*((?:[^*]|\*(?!\*))+)\*\*/g, '<strong>$1</strong>')
+    s = s.replace(/\*((?:[^*\n]|\*\*)+)\*(?!\*)/g, '<em>$1</em>')
     return s
   }
 

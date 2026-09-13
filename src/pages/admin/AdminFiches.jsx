@@ -189,16 +189,22 @@ export default function AdminFiches() {
                     const html = e.clipboardData.getData('text/html')
                     if (!html) return
                     e.preventDefault()
+                    const BLOCK = new Set(['p','div','li','ul','ol','h1','h2','h3','h4','h5','h6','blockquote','table','thead','tbody','tr'])
                     function nodeToMd(node) {
-                      if (node.nodeType === 3) return node.textContent
+                      if (node.nodeType === 3) {
+                        // strip zero-width and invisible chars Notion inserts
+                        return node.textContent.replace(/[​-‍﻿­]/g, '')
+                      }
                       if (node.nodeType !== 1) return ''
                       const tag = node.tagName.toLowerCase()
+                      const isBlock = BLOCK.has(tag)
                       const style = node.getAttribute('style') || ''
-                      const fw = style.match(/font-weight\s*:\s*([^;]+)/i)?.[1]?.trim() || ''
+                      // Only detect bold/italic on inline elements (not block elements which inherit)
+                      const fw = !isBlock ? (style.match(/font-weight\s*:\s*([^;"\s]+)/i)?.[1]?.trim() || '') : ''
                       const isBold = tag === 'b' || tag === 'strong'
                         || fw === 'bold' || (parseInt(fw) >= 600)
                       const isItalic = tag === 'em' || tag === 'i'
-                        || /font-style\s*:\s*italic/i.test(style)
+                        || (!isBlock && /font-style\s*:\s*italic/i.test(style))
                       const inner = Array.from(node.childNodes).map(nodeToMd).join('')
                       if (tag === 'br') return ' '
                       if (tag === 'p' || tag === 'div') return inner.trim() ? inner.trim() + '\n\n' : ''
@@ -214,6 +220,8 @@ export default function AdminFiches() {
                     }
                     const doc = new DOMParser().parseFromString(html, 'text/html')
                     let md = nodeToMd(doc.body)
+                    // Remove orphaned ** (unmatched bold markers)
+                    md = md.replace(/\*\*([^*\n]*)\*\*([^*\n]*)\*\*(?!\*)/g, '**$1$2**')
                     md = md.replace(/ {2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
                     const ta = e.target
                     const start = ta.selectionStart, end = ta.selectionEnd
