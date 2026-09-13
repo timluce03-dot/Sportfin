@@ -187,26 +187,32 @@ export default function AdminFiches() {
                   placeholder={'### Titre de section\n\nTexte avec **gras**, *italique*, $formule$\n\n- Point 1\n- Point 2'}
                   onPaste={e => {
                     const html = e.clipboardData.getData('text/html')
-                    // Only intercept if there's actual bold/italic to preserve
-                    if (!html || !/<(strong|b|em|i)[\s>]/i.test(html)) return
+                    if (!html) return
                     e.preventDefault()
                     let md = html
-                    // Strip outer wrapper noise (Word/Notion add <html><body>…)
-                    md = md.replace(/<html[\s\S]*?<body[^>]*>/i, '').replace(/<\/body>[\s\S]*/i, '')
-                    // Bold & italic before stripping tags
+                    // Strip outer wrapper (Word/Notion/Google Docs add <html><body>…)
+                    md = md.replace(/[\s\S]*?<body[^>]*>/i, '').replace(/<\/body>[\s\S]*/i, '')
+                    // Google Docs / Notion: <span style="font-weight:700"> or font-weight:bold
+                    md = md.replace(/<span([^>]*)style="([^"]*font-weight\s*:\s*(?:bold|[6-9]\d\d)[^"]*)"([^>]*)>([\s\S]*?)<\/span>/gi,
+                      (_, a, _s, b, c) => `**${c.replace(/<[^>]+>/g, '')}**`)
+                    // Google Docs italic: font-style:italic
+                    md = md.replace(/<span([^>]*)style="([^"]*font-style\s*:\s*italic[^"]*)"([^>]*)>([\s\S]*?)<\/span>/gi,
+                      (_, a, _s, b, c) => `*${c.replace(/<[^>]+>/g, '')}*`)
+                    // Standard bold/italic tags
                     md = md.replace(/<(strong|b)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `**${c.replace(/<[^>]+>/g, '')}**`)
                     md = md.replace(/<(em|i)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `*${c.replace(/<[^>]+>/g, '')}*`)
-                    // Paragraph / heading breaks → double newline
+                    // Paragraph breaks → double newline
                     md = md.replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
-                    md = md.replace(/<\/h[1-6]>\s*</gi, '\n\n<')
                     md = md.replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n\n')
-                    // <br> → space (avoid per-word line breaks from PDF sources)
+                    md = md.replace(/<\/div>\s*<div[^>]*>/gi, '\n\n')
+                    md = md.replace(/<div[^>]*>/gi, '').replace(/<\/div>/gi, '\n\n')
+                    // br → space
                     md = md.replace(/<br\s*\/?>/gi, ' ')
-                    // List items
+                    // Lists
                     md = md.replace(/<li[^>]*>/gi, '\n- ').replace(/<\/li>/gi, '')
                     // Strip remaining tags
                     md = md.replace(/<[^>]+>/g, '')
-                    // HTML entities
+                    // Entities
                     md = md.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
                          .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
                     // Clean up
