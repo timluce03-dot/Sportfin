@@ -152,10 +152,10 @@ export function renderMd(text, tableClass = 'cs-table') {
       if (!l.trim()) break
       if (/^[-*]\s/.test(l) || /^\d+\.\s/.test(l) || /^#+\s/.test(l) || /^---+$/.test(l.trim())) break
       if (isRow(l) || /^>\s?/.test(l) || /^@@MATH_\d+@@$/.test(l.trim())) break
-      pLines.push(inlineFull(l))
+      pLines.push(l)
       i++
     }
-    if (pLines.length) out.push(`<p style="margin:0 0 12px;line-height:1.75">${pLines.join(' ')}</p>`)
+    if (pLines.length) out.push(`<p style="margin:0 0 12px;line-height:1.75">${inlineFull(pLines.join(' '))}</p>`)
   }
 
   return out.join('')
