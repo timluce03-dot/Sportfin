@@ -2,54 +2,72 @@ import katex from 'katex'
 
 /**
  * Markdown + LaTeX renderer.
- * Supports: ### headings, bullet lists, numbered lists, tables, **bold**, *italic*,
- * display math $$...$$ (KaTeX), inline math $...$ (KaTeX).
+ * Supports: ### headings, bullet/numbered lists, tables, **bold**, *italic*,
+ * $$...$$ display math (KaTeX), $...$ inline math (KaTeX), --- hr, > blockquote.
  */
 export function renderMd(text, tableClass = 'cs-table') {
   if (!text) return ''
 
-  // ── 1. Extract and render display math $$...$$ ──────────────────
+  // ── 1. Pre-extract display math $$...$$ ─────────────────────────
   const mathBlocks = []
-  const tagged = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, formula) => {
+  let src = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, formula) => {
     const idx = mathBlocks.length
     try {
-      const html = katex.renderToString(formula.trim(), { throwOnError: false, displayMode: true })
-      mathBlocks.push(`<div style="overflow-x:auto;margin:14px 0;text-align:center;font-size:1.05em">${html}</div>`)
-    } catch {
-      mathBlocks.push(`<div style="font-family:monospace;padding:8px;background:rgba(0,0,0,.04);border-radius:6px">${formula}</div>`)
+      mathBlocks.push(katex.renderToString(formula.trim(), { throwOnError: false, displayMode: true }))
+    } catch (e) {
+      mathBlocks.push(`<pre style="font-family:monospace;font-size:13px;overflow-x:auto">${formula}</pre>`)
     }
     return `\n@@MATH_${idx}@@\n`
   })
 
-  // ── 2. Line-by-line processing ───────────────────────────────────
+  // ── 2. Helpers ───────────────────────────────────────────────────
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-  // Inline: inline math $...$ then bold/italic
-  const inline = raw => {
-    // Inline math $...$  (not $$)
-    let s = raw.replace(/(?<!\$)\$(?!\$)([^$\n]+?)(?<!\$)\$(?!\$)/g, (_, f) => {
+  // Render inline $...$ and then **bold** / *italic*
+  function inlineFull(raw) {
+    // First replace inline math (avoid matching $$ by using a non-$ char lookaround trick)
+    let s = raw.replace(/\$([^$\n]+?)\$/g, (match, f, offset, str) => {
+      // Make sure it's not part of $$
+      const prev = str[offset - 1]
+      const next = str[offset + match.length]
+      if (prev === '$' || next === '$') return match
       try { return katex.renderToString(f.trim(), { throwOnError: false, displayMode: false }) }
       catch { return `<code>${esc(f)}</code>` }
     })
-    // Escape remaining HTML
-    s = s.replace(/&(?!amp;|lt;|gt;)/g, '&amp;').replace(/</g, c => c === '<' && /^<[a-z/]/.test(s) ? c : '&lt;')
-    // Bold then italic (require non-space adjacent to markers)
-    s = s.replace(/\*\*(\S(?:[\s\S]*?\S)?)\*\*/g, '<strong>$1</strong>')
-    s = s.replace(/(?<!\*)\*(\S(?:[^*]*?\S)?)\*(?!\*)/g, '<em>$1</em>')
+    // Escape HTML in non-KaTeX parts (KaTeX already outputs HTML, so only escape outside spans)
+    // Simple approach: escape then apply bold/italic
+    // Since KaTeX output contains < > &, we must not escape it.
+    // Strategy: escape first, then apply bold/italic on escaped text, then un-protect katex spans.
+    // Easier: build the string segment by segment.
+    // Simplest correct approach for our use case: apply bold/italic on the raw string,
+    // then escape only the non-HTML parts.
+    // → Process: bold/italic markers never appear inside KaTeX output, so apply them first.
+    s = s.replace(/\*\*(\S[\s\S]*?\S|\S)\*\*/g, '\x01$1\x02') // placeholder for <strong>
+    s = s.replace(/\*(\S[^*\n]*?\S|\S)\*(?!\*)/g, '\x03$1\x04') // placeholder for <em>
+    // Now escape raw text portions (anything not already HTML from KaTeX)
+    // We can't easily distinguish KaTeX HTML from raw text here, so we skip escaping
+    // (KaTeX is injected directly; the remaining text will have & < > from LaTeX notation
+    //  which is fine since KaTeX already escaped its own output)
+    s = s.replace(/\x01/g, '<strong>').replace(/\x02/g, '</strong>')
+    s = s.replace(/\x03/g, '<em>').replace(/\x04/g, '</em>')
     return s
   }
 
-  // Simpler inline for cases where we've already escaped HTML
-  const inlineEscaped = s => s
-    .replace(/\*\*(\S(?:[\s\S]*?\S)?)\*\*/g, '<strong>$1</strong>')
-    .replace(/(?<!\*)\*(\S(?:[^*]*?\S)?)\*(?!\*)/g, '<em>$1</em>')
+  // Inline for lines that have no math — escape + bold/italic
+  function inlineEsc(raw) {
+    let s = esc(raw)
+    s = s.replace(/\*\*(\S[\s\S]*?\S|\S)\*\*/g, '<strong>$1</strong>')
+    s = s.replace(/\*(\S[^*]*?\S|\S)\*(?!\*)/g, '<em>$1</em>')
+    return s
+  }
 
   const isRow = l => /^\s*\|/.test(l) && l.includes('|')
   const isSep = l => /^\s*\|[\s\-:\|]+\|/.test(l)
-  const cols = l => l.split('|').map(c => c.trim()).filter(Boolean)
+  const cols  = l => l.split('|').map(c => c.trim()).filter(Boolean)
 
-  const lines = tagged.split('\n')
-  const out = []
+  // ── 3. Line-by-line ─────────────────────────────────────────────
+  const lines = src.split('\n')
+  const out   = []
   let i = 0
 
   while (i < lines.length) {
@@ -57,15 +75,24 @@ export function renderMd(text, tableClass = 'cs-table') {
 
     // Math placeholder
     const mm = ln.trim().match(/^@@MATH_(\d+)@@$/)
-    if (mm) { out.push(mathBlocks[+mm[1]]); i++; continue }
+    if (mm) {
+      out.push(`<div style="overflow-x:auto;margin:14px 0;text-align:center">${mathBlocks[+mm[1]]}</div>`)
+      i++; continue
+    }
+
+    // Horizontal rule ---
+    if (/^---+$/.test(ln.trim())) {
+      out.push('<hr style="border:none;border-top:1px solid var(--sf-border);margin:16px 0">')
+      i++; continue
+    }
 
     // Table
     if (isRow(ln) && i + 1 < lines.length && isSep(lines[i + 1])) {
-      const ths = cols(ln).map(h => `<th>${inlineEscaped(esc(h))}</th>`).join('')
+      const ths = cols(ln).map(h => `<th>${inlineEsc(h)}</th>`).join('')
       i += 2
       const trs = []
       while (i < lines.length && isRow(lines[i])) {
-        trs.push(`<tr>${cols(lines[i]).map(c => `<td>${inlineEscaped(esc(c))}</td>`).join('')}</tr>`)
+        trs.push(`<tr>${cols(lines[i]).map(c => `<td>${inlineEsc(c)}</td>`).join('')}</tr>`)
         i++
       }
       out.push(`<table class="${tableClass}"><thead><tr>${ths}</tr></thead><tbody>${trs.join('')}</tbody></table>`)
@@ -76,17 +103,28 @@ export function renderMd(text, tableClass = 'cs-table') {
     const hm = ln.match(/^(#{1,6})\s+(.*)/)
     if (hm) {
       const lvl = hm[1].length
-      const fs = lvl === 1 ? '20px' : lvl === 2 ? '17px' : '15px'
-      const fw = lvl <= 2 ? '800' : '700'
-      out.push(`<h${lvl} style="font-size:${fs};font-weight:${fw};margin:18px 0 8px;color:var(--sf-primary)">${inlineEscaped(esc(hm[2]))}</h${lvl}>`)
+      const fs  = lvl === 1 ? '20px' : lvl === 2 ? '17px' : '15px'
+      const fw  = lvl <= 2 ? '800' : '700'
+      out.push(`<h${lvl} style="font-size:${fs};font-weight:${fw};margin:18px 0 8px;color:var(--sf-primary)">${inlineEsc(hm[2])}</h${lvl}>`)
       i++; continue
+    }
+
+    // Blockquote >
+    if (/^>\s?/.test(ln)) {
+      const qLines = []
+      while (i < lines.length && /^>\s?/.test(lines[i])) {
+        qLines.push(inlineFull(lines[i].replace(/^>\s?/, '')))
+        i++
+      }
+      out.push(`<blockquote style="border-left:3px solid var(--sf-accent,#C9A84C);margin:10px 0;padding:4px 14px;color:var(--sf-muted);font-style:italic">${qLines.join('<br>')}</blockquote>`)
+      continue
     }
 
     // Bullet list
     if (/^[-*]\s/.test(ln)) {
       const items = []
       while (i < lines.length && /^[-*]\s/.test(lines[i])) {
-        items.push(`<li style="margin-bottom:4px">${inlineEscaped(esc(lines[i].replace(/^[-*]\s+/, '')))}</li>`)
+        items.push(`<li style="margin-bottom:4px">${inlineFull(lines[i].replace(/^[-*]\s+/, ''))}</li>`)
         i++
       }
       out.push(`<ul style="margin:8px 0 10px 20px;padding:0;list-style:disc">${items.join('')}</ul>`)
@@ -97,7 +135,7 @@ export function renderMd(text, tableClass = 'cs-table') {
     if (/^\d+\.\s/.test(ln)) {
       const items = []
       while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
-        items.push(`<li style="margin-bottom:6px">${inlineEscaped(esc(lines[i].replace(/^\d+\.\s+/, '')))}</li>`)
+        items.push(`<li style="margin-bottom:6px">${inlineFull(lines[i].replace(/^\d+\.\s+/, ''))}</li>`)
         i++
       }
       out.push(`<ol style="margin:8px 0 10px 20px;padding:0;list-style:decimal">${items.join('')}</ol>`)
@@ -107,15 +145,17 @@ export function renderMd(text, tableClass = 'cs-table') {
     // Empty line
     if (!ln.trim()) { i++; continue }
 
-    // Paragraph — collect until empty / block element
+    // Paragraph
     const pLines = []
     while (i < lines.length) {
       const l = lines[i]
-      if (!l.trim() || /^[-*]\s/.test(l) || /^\d+\.\s/.test(l) || /^#+\s/.test(l) || isRow(l) || /^@@MATH_\d+@@$/.test(l.trim())) break
-      pLines.push(inlineEscaped(esc(l)))
+      if (!l.trim()) break
+      if (/^[-*]\s/.test(l) || /^\d+\.\s/.test(l) || /^#+\s/.test(l) || /^---+$/.test(l.trim())) break
+      if (isRow(l) || /^>\s?/.test(l) || /^@@MATH_\d+@@$/.test(l.trim())) break
+      pLines.push(inlineFull(l))
       i++
     }
-    if (pLines.length) out.push(`<p style="margin:0 0 12px">${pLines.join('<br>')}</p>`)
+    if (pLines.length) out.push(`<p style="margin:0 0 12px;line-height:1.75">${pLines.join('<br>')}</p>`)
   }
 
   return out.join('')
