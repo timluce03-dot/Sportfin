@@ -155,7 +155,7 @@ export function renderMd(text, tableClass = 'cs-table') {
       pLines.push(inlineFull(l))
       i++
     }
-    if (pLines.length) out.push(`<p style="margin:0 0 12px;line-height:1.75">${pLines.join('<br>')}</p>`)
+    if (pLines.length) out.push(`<p style="margin:0 0 12px;line-height:1.75">${pLines.join(' ')}</p>`)
   }
 
   return out.join('')
