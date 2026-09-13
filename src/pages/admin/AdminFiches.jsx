@@ -189,25 +189,21 @@ export default function AdminFiches() {
                     const html = e.clipboardData.getData('text/html')
                     if (!html) return
                     e.preventDefault()
-                    const tmp = document.createElement('div')
-                    tmp.innerHTML = html
-                    // bold
-                    tmp.querySelectorAll('b, strong').forEach(el => {
-                      el.replaceWith(`**${el.textContent}**`)
-                    })
-                    // italic
-                    tmp.querySelectorAll('i, em').forEach(el => {
-                      el.replaceWith(`*${el.textContent}*`)
-                    })
-                    const plain = tmp.innerText || tmp.textContent || ''
+                    let md = html
+                    md = md.replace(/<(strong|b)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `**${c}**`)
+                    md = md.replace(/<(em|i)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `*${c}*`)
+                    md = md.replace(/<br\s*\/?>/gi, '\n')
+                    md = md.replace(/<\/p>/gi, '\n\n')
+                    md = md.replace(/<li[^>]*>/gi, '- ').replace(/<\/li>/gi, '\n')
+                    md = md.replace(/<[^>]+>/g, '')
+                    md = md.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+                         .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+                    md = md.replace(/\n{3,}/g, '\n\n').trim()
                     const ta = e.target
                     const start = ta.selectionStart, end = ta.selectionEnd
-                    const prev = form.content
-                    const next = prev.slice(0, start) + plain + prev.slice(end)
+                    const next = form.content.slice(0, start) + md + form.content.slice(end)
                     setForm(f => ({ ...f, content: next }))
-                    requestAnimationFrame(() => {
-                      ta.selectionStart = ta.selectionEnd = start + plain.length
-                    })
+                    requestAnimationFrame(() => { ta.selectionStart = ta.selectionEnd = start + md.length })
                   }} />
               )}
             </div>
