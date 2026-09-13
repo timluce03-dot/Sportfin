@@ -1,5 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
+import { renderMd } from '../../utils/renderMd'
+
+function FontSizeCtrl({ value, onChange }) {
+  return (
+    <div className="flex items-center gap-1 ml-2">
+      <button type="button" onClick={() => onChange(Math.max(10, value - 1))}
+        className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center"
+        style={{ background: 'rgba(0,0,0,.06)', color: '#555' }}>A−</button>
+      <span className="text-[10px] w-6 text-center text-gray-500">{value}</span>
+      <button type="button" onClick={() => onChange(Math.min(22, value + 1))}
+        className="w-5 h-5 rounded text-xs font-bold flex items-center justify-center"
+        style={{ background: 'rgba(0,0,0,.06)', color: '#555' }}>A+</button>
+    </div>
+  )
+}
 
 const DIFFICULTIES = ['Débutant', 'Intermédiaire', 'Avancé', 'Expert']
 const COLORS = [
@@ -14,7 +29,7 @@ const COLORS = [
 const EMPTY = {
   title: '', subtitle: '', pdf_url: '', category: '',
   emoji: '📄', color: 'blue', difficulty: 'Intermédiaire',
-  published: true, position: 0,
+  published: true, position: 0, content: '',
 }
 
 export default function AdminFiches() {
@@ -25,6 +40,8 @@ export default function AdminFiches() {
   const [saving,    setSaving]    = useState(false)
   const [uploading, setUploading] = useState(false)
   const [saveErr,   setSaveErr]   = useState(null)
+  const [contentFs, setContentFs] = useState(14)
+  const [previewContent, setPreviewContent] = useState(false)
   const fileRef                   = useRef()
 
   async function load() {
@@ -56,8 +73,7 @@ export default function AdminFiches() {
 
   async function save(ev) {
     ev.preventDefault(); setSaving(true); setSaveErr(null)
-    if (!form.pdf_url) { setSaveErr('Veuillez uploader un PDF avant de sauvegarder.'); setSaving(false); return }
-    const payload = { ...form, position: Number(form.position) }
+    const payload = { ...form, position: Number(form.position), content: form.content || '' }
     const { error } = editing
       ? await supabase.from('fiches').update(payload).eq('id', editing)
       : await supabase.from('fiches').insert(payload)
@@ -147,6 +163,29 @@ export default function AdminFiches() {
               <select className="form-control" value={form.difficulty} onChange={set('difficulty')}>
                 {DIFFICULTIES.map(d => <option key={d}>{d}</option>)}
               </select>
+            </div>
+
+            {/* Content */}
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-2 mb-1">
+                <label className="text-xs font-semibold text-gray-600">Contenu (Markdown + LaTeX)</label>
+                <FontSizeCtrl value={contentFs} onChange={setContentFs} />
+                <button type="button" onClick={() => setPreviewContent(p => !p)}
+                  className="ml-auto text-[11px] font-bold px-3 py-1 rounded-lg"
+                  style={{ background: previewContent ? '#0B2545' : 'rgba(0,0,0,.06)', color: previewContent ? '#fff' : '#555' }}>
+                  {previewContent ? 'Éditer' : 'Aperçu'}
+                </button>
+              </div>
+              {previewContent ? (
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 min-h-[200px] overflow-auto"
+                  style={{ fontSize: contentFs, lineHeight: 1.75 }}
+                  dangerouslySetInnerHTML={{ __html: renderMd(form.content || '', 'md-table') }} />
+              ) : (
+                <textarea className="form-control font-mono" rows={10}
+                  style={{ fontSize: contentFs, lineHeight: 1.75 }}
+                  value={form.content} onChange={set('content')}
+                  placeholder={'### Titre de section\n\nTexte avec **gras**, *italique*, $formule$\n\n- Point 1\n- Point 2'} />
+              )}
             </div>
 
             {/* PDF Upload */}

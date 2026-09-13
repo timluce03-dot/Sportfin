@@ -589,13 +589,13 @@ const COLOR_MAP = {
 }
 
 function FicheCard({ f }) {
-  const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
   const c = COLOR_MAP[f.color] || COLOR_MAP.blue
   return (
-    <div className="rounded-2xl overflow-hidden transition-all"
+    <button onClick={() => navigate(`/fiches/${f.id}`)}
+      className="w-full rounded-2xl overflow-hidden transition-all text-left hover:brightness-95"
       style={{ background: c.bg, border: `1px solid ${c.border}` }}>
-      <button onClick={() => setOpen(o => !o)}
-        className="w-full text-left px-5 py-4 flex items-start gap-3 hover:brightness-95 transition-all">
+      <div className="px-5 py-4 flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[22px] flex-shrink-0"
           style={{ background: 'rgba(255,255,255,.6)', border: `1px solid ${c.border}` }}>
           {f.emoji || '📄'}
@@ -614,37 +614,9 @@ function FicheCard({ f }) {
           </div>
           {f.subtitle && <p className="text-[12px]" style={{ color: c.color, opacity: .7 }}>{f.subtitle}</p>}
         </div>
-        <span className="text-[20px] flex-shrink-0 mt-0.5 transition-transform duration-200"
-          style={{ color: c.color, transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>›</span>
-      </button>
-
-      {open && f.pdf_url && (
-        <div className="border-t" style={{ borderColor: c.border }}>
-          <div className="flex items-center justify-between px-5 py-2.5 bg-white/40">
-            <span className="text-[12px] font-semibold" style={{ color: c.color }}>Fiche PDF</span>
-            <div className="flex gap-2">
-              <button
-                onClick={e => { const iframe = e.currentTarget.closest('.border-t').querySelector('iframe'); iframe?.requestFullscreen?.() }}
-                className="text-[11px] font-bold px-3 py-1 rounded-lg"
-                style={{ background: 'rgba(0,0,0,.12)', color: c.color }}>
-                ⛶ Plein écran
-              </button>
-              <a href={f.pdf_url} target="_blank" rel="noopener noreferrer"
-                className="text-[11.5px] font-bold px-3 py-1 rounded-lg"
-                style={{ background: c.tag, color: c.color }}>
-                ↗ Nouvel onglet
-              </a>
-            </div>
-          </div>
-          <iframe
-            src={f.pdf_url}
-            title={f.title}
-            className="w-full"
-            style={{ height: '75vh', border: 'none', display: 'block' }}
-          />
-        </div>
-      )}
-    </div>
+        <span className="text-[20px] flex-shrink-0 mt-0.5" style={{ color: c.color }}>›</span>
+      </div>
+    </button>
   )
 }
 

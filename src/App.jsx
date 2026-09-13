@@ -40,6 +40,7 @@ import AdminFaq from './pages/admin/AdminFaq'
 import AdminFiches from './pages/admin/AdminFiches'
 import AdminCaseStudies from './pages/admin/AdminCaseStudies'
 import CaseStudyPage from './pages/CaseStudyPage'
+import FichePage from './pages/FichePage'
 
 function PublicLayout() {
   return (
@@ -72,6 +73,7 @@ export default function App() {
               <Route path="/profil" element={<Profil />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/cas/:id" element={<CaseStudyPage />} />
+              <Route path="/fiches/:id" element={<FichePage />} />
             </Route>
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
