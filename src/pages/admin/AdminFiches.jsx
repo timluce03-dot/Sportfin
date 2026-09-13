@@ -184,7 +184,31 @@ export default function AdminFiches() {
                 <textarea className="form-control font-mono" rows={25}
                   style={{ fontSize: contentFs, lineHeight: 1.75 }}
                   value={form.content} onChange={set('content')}
-                  placeholder={'### Titre de section\n\nTexte avec **gras**, *italique*, $formule$\n\n- Point 1\n- Point 2'} />
+                  placeholder={'### Titre de section\n\nTexte avec **gras**, *italique*, $formule$\n\n- Point 1\n- Point 2'}
+                  onPaste={e => {
+                    const html = e.clipboardData.getData('text/html')
+                    if (!html) return
+                    e.preventDefault()
+                    const tmp = document.createElement('div')
+                    tmp.innerHTML = html
+                    // bold
+                    tmp.querySelectorAll('b, strong').forEach(el => {
+                      el.replaceWith(`**${el.textContent}**`)
+                    })
+                    // italic
+                    tmp.querySelectorAll('i, em').forEach(el => {
+                      el.replaceWith(`*${el.textContent}*`)
+                    })
+                    const plain = tmp.innerText || tmp.textContent || ''
+                    const ta = e.target
+                    const start = ta.selectionStart, end = ta.selectionEnd
+                    const prev = form.content
+                    const next = prev.slice(0, start) + plain + prev.slice(end)
+                    setForm(f => ({ ...f, content: next }))
+                    requestAnimationFrame(() => {
+                      ta.selectionStart = ta.selectionEnd = start + plain.length
+                    })
+                  }} />
               )}
             </div>
 
