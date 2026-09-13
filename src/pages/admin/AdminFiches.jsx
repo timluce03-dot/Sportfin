@@ -177,11 +177,11 @@ export default function AdminFiches() {
                 </button>
               </div>
               {previewContent ? (
-                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 min-h-[200px] overflow-auto"
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 min-h-[500px] overflow-auto"
                   style={{ fontSize: contentFs, lineHeight: 1.75 }}
                   dangerouslySetInnerHTML={{ __html: renderMd(form.content || '', 'md-table') }} />
               ) : (
-                <textarea className="form-control font-mono" rows={10}
+                <textarea className="form-control font-mono" rows={25}
                   style={{ fontSize: contentFs, lineHeight: 1.75 }}
                   value={form.content} onChange={set('content')}
                   placeholder={'### Titre de section\n\nTexte avec **gras**, *italique*, $formule$\n\n- Point 1\n- Point 2'} />
