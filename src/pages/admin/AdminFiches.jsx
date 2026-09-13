@@ -220,8 +220,15 @@ export default function AdminFiches() {
                     }
                     const doc = new DOMParser().parseFromString(html, 'text/html')
                     let md = nodeToMd(doc.body)
-                    // Remove orphaned ** (unmatched bold markers)
-                    md = md.replace(/\*\*([^*\n]*)\*\*([^*\n]*)\*\*(?!\*)/g, '**$1$2**')
+                    // Merge adjacent bold spans: **A** **B** → **A B** (Notion splits into many <strong>)
+                    let prev
+                    do {
+                      prev = md
+                      md = md.replace(/\*\*((?:[^*\n]|\*(?!\*))*)\*\*( ?)\*\*/g, '**$1$2')
+                    } while (md !== prev)
+                    // Close any unclosed ** (orphan from merge)
+                    if ((md.match(/\*\*/g) || []).length % 2 !== 0)
+                      md = md.replace(/\*\*(?=[^*\n]*(\n|$))/, '')
                     md = md.replace(/ {2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
                     const ta = e.target
                     const start = ta.selectionStart, end = ta.selectionEnd
