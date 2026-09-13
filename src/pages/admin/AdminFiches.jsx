@@ -189,33 +189,31 @@ export default function AdminFiches() {
                     const html = e.clipboardData.getData('text/html')
                     if (!html) return
                     e.preventDefault()
-                    let md = html
-                    // Strip outer wrapper (Word/Notion/Google Docs add <html><body>…)
-                    md = md.replace(/[\s\S]*?<body[^>]*>/i, '').replace(/<\/body>[\s\S]*/i, '')
-                    // Google Docs / Notion: <span style="font-weight:700"> or font-weight:bold
-                    md = md.replace(/<span([^>]*)style="([^"]*font-weight\s*:\s*(?:bold|[6-9]\d\d)[^"]*)"([^>]*)>([\s\S]*?)<\/span>/gi,
-                      (_, a, _s, b, c) => `**${c.replace(/<[^>]+>/g, '')}**`)
-                    // Google Docs italic: font-style:italic
-                    md = md.replace(/<span([^>]*)style="([^"]*font-style\s*:\s*italic[^"]*)"([^>]*)>([\s\S]*?)<\/span>/gi,
-                      (_, a, _s, b, c) => `*${c.replace(/<[^>]+>/g, '')}*`)
-                    // Standard bold/italic tags
-                    md = md.replace(/<(strong|b)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `**${c.replace(/<[^>]+>/g, '')}**`)
-                    md = md.replace(/<(em|i)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `*${c.replace(/<[^>]+>/g, '')}*`)
-                    // Paragraph breaks → double newline
-                    md = md.replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
-                    md = md.replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n\n')
-                    md = md.replace(/<\/div>\s*<div[^>]*>/gi, '\n\n')
-                    md = md.replace(/<div[^>]*>/gi, '').replace(/<\/div>/gi, '\n\n')
-                    // br → space
-                    md = md.replace(/<br\s*\/?>/gi, ' ')
-                    // Lists
-                    md = md.replace(/<li[^>]*>/gi, '\n- ').replace(/<\/li>/gi, '')
-                    // Strip remaining tags
-                    md = md.replace(/<[^>]+>/g, '')
-                    // Entities
-                    md = md.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
-                         .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-                    // Clean up
+                    function nodeToMd(node) {
+                      if (node.nodeType === 3) return node.textContent
+                      if (node.nodeType !== 1) return ''
+                      const tag = node.tagName.toLowerCase()
+                      const style = node.getAttribute('style') || ''
+                      const fw = style.match(/font-weight\s*:\s*([^;]+)/i)?.[1]?.trim() || ''
+                      const isBold = tag === 'b' || tag === 'strong'
+                        || fw === 'bold' || (parseInt(fw) >= 600)
+                      const isItalic = tag === 'em' || tag === 'i'
+                        || /font-style\s*:\s*italic/i.test(style)
+                      const inner = Array.from(node.childNodes).map(nodeToMd).join('')
+                      if (tag === 'br') return ' '
+                      if (tag === 'p' || tag === 'div') return inner.trim() ? inner.trim() + '\n\n' : ''
+                      if (tag === 'li') return '\n- ' + inner.trim()
+                      if (tag === 'ul' || tag === 'ol') return inner
+                      if (tag === 'h1') return '# ' + inner.trim() + '\n\n'
+                      if (tag === 'h2') return '## ' + inner.trim() + '\n\n'
+                      if (tag === 'h3') return '### ' + inner.trim() + '\n\n'
+                      if (isBold && isItalic) return `***${inner}***`
+                      if (isBold) return `**${inner}**`
+                      if (isItalic) return `*${inner}*`
+                      return inner
+                    }
+                    const doc = new DOMParser().parseFromString(html, 'text/html')
+                    let md = nodeToMd(doc.body)
                     md = md.replace(/ {2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
                     const ta = e.target
                     const start = ta.selectionStart, end = ta.selectionEnd
