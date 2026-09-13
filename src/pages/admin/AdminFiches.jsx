@@ -187,18 +187,30 @@ export default function AdminFiches() {
                   placeholder={'### Titre de section\n\nTexte avec **gras**, *italique*, $formule$\n\n- Point 1\n- Point 2'}
                   onPaste={e => {
                     const html = e.clipboardData.getData('text/html')
-                    if (!html) return
+                    // Only intercept if there's actual bold/italic to preserve
+                    if (!html || !/<(strong|b|em|i)[\s>]/i.test(html)) return
                     e.preventDefault()
                     let md = html
-                    md = md.replace(/<(strong|b)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `**${c}**`)
-                    md = md.replace(/<(em|i)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `*${c}*`)
-                    md = md.replace(/<br\s*\/?>/gi, '\n')
-                    md = md.replace(/<\/p>/gi, '\n\n')
-                    md = md.replace(/<li[^>]*>/gi, '- ').replace(/<\/li>/gi, '\n')
+                    // Strip outer wrapper noise (Word/Notion add <html><body>…)
+                    md = md.replace(/<html[\s\S]*?<body[^>]*>/i, '').replace(/<\/body>[\s\S]*/i, '')
+                    // Bold & italic before stripping tags
+                    md = md.replace(/<(strong|b)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `**${c.replace(/<[^>]+>/g, '')}**`)
+                    md = md.replace(/<(em|i)[^>]*>([\s\S]*?)<\/\1>/gi, (_, _t, c) => `*${c.replace(/<[^>]+>/g, '')}*`)
+                    // Paragraph / heading breaks → double newline
+                    md = md.replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
+                    md = md.replace(/<\/h[1-6]>\s*</gi, '\n\n<')
+                    md = md.replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n\n')
+                    // <br> → space (avoid per-word line breaks from PDF sources)
+                    md = md.replace(/<br\s*\/?>/gi, ' ')
+                    // List items
+                    md = md.replace(/<li[^>]*>/gi, '\n- ').replace(/<\/li>/gi, '')
+                    // Strip remaining tags
                     md = md.replace(/<[^>]+>/g, '')
+                    // HTML entities
                     md = md.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
                          .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-                    md = md.replace(/\n{3,}/g, '\n\n').trim()
+                    // Clean up
+                    md = md.replace(/ {2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim()
                     const ta = e.target
                     const start = ta.selectionStart, end = ta.selectionEnd
                     const next = form.content.slice(0, start) + md + form.content.slice(end)
