@@ -121,8 +121,7 @@ function PublicationsSection() {
 
   useEffect(() => {
     setLoading(true)
-    getPublications().then(({ data, error }) => {
-      console.log('[Publications] data:', data, 'error:', error)
+    getPublications().then(({ data }) => {
       setPubs(data || [])
       setLoading(false)
     })
