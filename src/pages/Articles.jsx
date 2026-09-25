@@ -121,7 +121,8 @@ function PublicationsSection() {
 
   useEffect(() => {
     setLoading(true)
-    getPublications().then(({ data }) => {
+    getPublications().then(({ data, error }) => {
+      console.log('[Publications] data:', data, 'error:', error)
       setPubs(data || [])
       setLoading(false)
     })
@@ -134,7 +135,6 @@ function PublicationsSection() {
   function pickSeries(id) { setSeries(id); setPubIdx(0) }
 
   const hasPubs = PUB_SERIES.some(s => pubs.some(p => p.series === s.id))
-  if (!loading && !hasPubs) return null
 
   return (
     <section style={{ background: '#0B2545' }} className="py-12 px-6 lg:px-10">
