@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext'
 import { getArticles } from '../services/articlesService'
 import { getReviews } from '../services/reviewsService'
 import CareerMetiersBanner from '../components/CareerMetiersBanner'
+import PublicationsSection from '../components/PublicationsSection'
 import TeamSection from '../components/TeamSection'
 import PartnersScrollBanner from '../components/PartnersScrollBanner'
 
@@ -322,6 +323,9 @@ export default function Home() {
 
       {/* ── Sections ordonnées ── */}
       {sectionOrder.map(key => SECTIONS[key] ?? null)}
+
+      {/* ── Publications Instagram ── */}
+      <PublicationsSection compact />
 
       {/* ── Métiers banner ── */}
       <CareerMetiersBanner />
