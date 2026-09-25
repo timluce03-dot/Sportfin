@@ -38,6 +38,7 @@ import AdminCareerMetiers from './pages/admin/AdminCareerMetiers'
 import AdminTeam from './pages/admin/AdminTeam'
 import AdminFaq from './pages/admin/AdminFaq'
 import AdminFiches from './pages/admin/AdminFiches'
+import AdminPublications from './pages/admin/AdminPublications'
 import AdminCaseStudies from './pages/admin/AdminCaseStudies'
 import CaseStudyPage from './pages/CaseStudyPage'
 import FichePage from './pages/FichePage'
@@ -95,6 +96,7 @@ export default function App() {
               <Route path="team"          element={<AdminTeam />} />
               <Route path="faq"           element={<AdminFaq />} />
               <Route path="fiches"        element={<AdminFiches />} />
+              <Route path="publications"  element={<AdminPublications />} />
               <Route path="case-studies"  element={<AdminCaseStudies />} />
             </Route>
           </Routes>

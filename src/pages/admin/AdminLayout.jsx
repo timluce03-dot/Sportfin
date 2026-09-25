@@ -19,8 +19,9 @@ const NAV_SECTIONS = [
       { to: '/admin/case-studies', label: 'Études de cas', icon: '🎯' },
       { to: '/admin/quizzes',   label: 'Quiz',      icon: '🧠' },
       { to: '/admin/questions', label: 'Questions', icon: '❓' },
-      { to: '/admin/articles',  label: 'Articles',  icon: '📰' },
-      { to: '/admin/podcasts',  label: 'Podcasts',  icon: '🎙️' },
+      { to: '/admin/articles',      label: 'Articles',      icon: '📰' },
+      { to: '/admin/publications',  label: 'Publications',  icon: '📸' },
+      { to: '/admin/podcasts',      label: 'Podcasts',      icon: '🎙️' },
     ],
   },
   {
