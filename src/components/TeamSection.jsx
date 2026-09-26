@@ -71,7 +71,7 @@ export default function TeamSection() {
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+        <div className="flex flex-wrap justify-center gap-5">
           {members.map(m => <TeamCard key={m.id} m={m} />)}
         </div>
       </div>

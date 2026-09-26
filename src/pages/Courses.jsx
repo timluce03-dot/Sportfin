@@ -6,7 +6,6 @@ import { getExercises, getExerciseQuestions, saveExerciseResult } from '../servi
 import { saveAttempt } from '../services/progressService'
 import { getFiches } from '../services/fichesService'
 import { getCaseStudies } from '../services/caseStudiesService'
-import StudentDashboard from '../components/StudentDashboard'
 import PartnersScrollBanner from '../components/PartnersScrollBanner'
 
 const DIFF_COLOR = {
@@ -770,7 +769,6 @@ export default function Courses() {
     { id: 'programme', label: 'Programme',          count: null },
     { id: 'exercices', label: 'Exercices pratiques', count: exercises.length > 0 ? exercises.length : null },
     { id: 'fiches',    label: 'Fiches de révision',  count: null },
-    { id: 'dashboard', label: 'Mon Dashboard',       count: null },
   ]
 
   return (
@@ -969,10 +967,6 @@ export default function Courses() {
           <FichesSection fiches={fiches} loading={fichesLoading} />
         )}
 
-        {/* DASHBOARD */}
-        {tab === 'dashboard' && (
-          <StudentDashboard user={user} />
-        )}
       </div>
     </div>
   )

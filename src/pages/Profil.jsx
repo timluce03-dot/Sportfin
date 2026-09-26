@@ -45,7 +45,7 @@ function SportfinFeatures() {
 
   return (
     <div className="mt-10 mb-2">
-      <div className="mb-4">
+      <div className="mb-4 text-center">
         <h2 className="font-serif font-extrabold text-[20px] mb-1" style={{ color: 'var(--sf-primary)' }}>Tout ce que SportFin vous apporte</h2>
         <p className="text-[13px]" style={{ color: 'var(--sf-muted)' }}>Une plateforme complète pour maîtriser le sport business.</p>
       </div>

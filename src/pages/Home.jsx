@@ -206,11 +206,11 @@ export default function Home() {
         <div>
           <div className="flex items-end justify-between mb-7">
             <div>
-              <span className="eyebrow">Actualité sport &amp; économie</span>
               <h2 className="mb-0 font-serif font-extrabold leading-tight"
-                style={{ fontSize: 'clamp(22px, 2.4vw, 32px)', color: 'var(--sf-accent)' }}>
-                Les grandes analyses
+                style={{ fontSize: 'clamp(22px, 2.4vw, 32px)', color: 'var(--sf-primary)' }}>
+                Actualité sport &amp; économie
               </h2>
+              <span className="text-[13px] font-medium" style={{ color: 'var(--sf-muted)' }}>Les grandes analyses</span>
             </div>
             <Link to="/articles" className="text-[12.5px] font-semibold flex items-center gap-1 flex-shrink-0"
               style={{ color: 'var(--sf-primary)' }}>
@@ -304,20 +304,6 @@ export default function Home() {
             <Link to="/cours" className="btn btn-accent btn-lg">Commencer gratuitement →</Link>
             <Link to="/certification" className="btn btn-white btn-lg">Voir la certification</Link>
           </div>
-          {theme.sections?.showStats !== false && (
-            <div className="flex items-center justify-center flex-wrap gap-0">
-              {[['4 500+','Apprenants'],['98%','Satisfaction'],['4','Modules'],['3 000+','Certifiés']].map(([n, l], i) => (
-                <div key={l} className="flex items-center">
-                  {i > 0 && <div className="h-6 w-px mx-5 flex-shrink-0" style={{ background: 'rgba(255,255,255,.14)' }} />}
-                  <div className="text-center">
-                    <div className="font-extrabold text-white leading-none"
-                      style={{ fontSize: 'clamp(16px, 1.8vw, 22px)', fontFamily: 'var(--sf-font-heading)' }}>{n}</div>
-                    <div className="text-[10px] font-medium mt-0.5" style={{ color: 'rgba(255,255,255,.4)' }}>{l}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </section>
 

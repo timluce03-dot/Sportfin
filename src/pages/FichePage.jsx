@@ -83,14 +83,14 @@ export default function FichePage() {
         {/* Header card */}
         <div className="rounded-2xl p-7 mb-8"
           style={{ background: 'linear-gradient(135deg, #071a32 0%, #0B2545 100%)', border: '1px solid rgba(201,168,76,.2)' }}>
-          <div className="flex items-start gap-4">
+          <div className="flex flex-col items-center text-center gap-3">
             {fiche.emoji && (
-              <div className="flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center text-[28px]"
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-[28px]"
                 style={{ background: `${col.light}`, border: `1.5px solid ${col.accent}44` }}>
                 {fiche.emoji}
               </div>
             )}
-            <div className="flex-1 min-w-0">
+            <div className="w-full">
               <div className="flex flex-wrap gap-2 mb-2">
                 {fiche.category && (
                   <span className="text-[10px] font-bold uppercase tracking-widest px-3 py-0.5 rounded-full"
