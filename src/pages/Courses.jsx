@@ -630,7 +630,7 @@ function FichesSection({ fiches, loading }) {
   )
 
   return (
-    <div className="max-w-[860px]">
+    <div className="max-w-[860px] mx-auto">
       <div className="mb-6">
         <h2 className="font-serif font-extrabold text-[22px] mb-1" style={{ color: 'var(--sf-primary)' }}>📋 Fiches de révision</h2>
         <p className="text-[13px]" style={{ color: 'var(--sf-muted)' }}>Synthèses clés du programme — cliquez sur une fiche pour la dérouler.</p>
