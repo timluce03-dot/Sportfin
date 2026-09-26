@@ -71,7 +71,8 @@ export default function TeamSection() {
         </div>
 
         {/* Grid */}
-        <div className="flex flex-wrap justify-center gap-5">
+        <div className="grid gap-5 justify-center"
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 200px))' }}>
           {members.map(m => <TeamCard key={m.id} m={m} />)}
         </div>
       </div>
